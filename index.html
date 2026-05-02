@@ -3,71 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SenTree - GIS Tabanlı Kentsel Ekosistem Hizmetleri Takip Sistemi</title>
-    
+    <title>SenTree - Kesin Çözüm Modu</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
-    
     <style>
-        body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; }
-        #map { height: 100vh; width: 100vw; background-color: #161616; z-index: 1; }
-
-        .sidebar { position: fixed; top: 20px; left: 15px; bottom: 20px; width: 310px; background-color: rgba(30, 30, 30, 0.65); backdrop-filter: blur(15px) saturate(180%); -webkit-backdrop-filter: blur(15px) saturate(180%); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; color: #e0e0e0; z-index: 1000; display: flex; flex-direction: column; box-sizing: border-box; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); }
-        .sidebar-header { padding: 25px 20px 15px 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); background-color: rgba(0, 0, 0, 0.2); }
-        .sidebar-title { margin: 0; font-size: 24px; font-weight: 700; color: #ffffff; letter-spacing: 0.5px; }
-        .sidebar-location { margin: 4px 0 0 0; font-size: 13px; font-weight: 600; color: #ffffff; opacity: 0.8; }
-        .sidebar-subtitle { margin: 12px 0 0 0; font-size: 9.5px; color: #2ecc71; text-transform: uppercase; letter-spacing: 0.8px; line-height: 1.4; font-weight: 700; }
-        .sidebar-powered { text-align: right; margin-top: 10px; font-size: 9px; color: #777; font-style: italic; }
-        .sidebar-content { padding: 15px; flex-grow: 1; overflow-y: auto; }
-
-        .excel-kutu-container { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 5px; }
-        .veri-kutusu { background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 12px; text-align: center; }
-        .veri-baslik { font-size: 10px; color: #999; text-transform: uppercase; margin-bottom: 6px; }
-        .veri-deger { font-size: 16px; font-weight: 600; color: #ffffff; }
-
-        .marker-cluster-small { background-color: rgba(46, 204, 113, 0.6); }
-        .marker-cluster-small div { background-color: rgba(46, 204, 113, 0.8); color: #fff; font-weight: bold; }
-
-        .zoom-guide { position: fixed; bottom: 30px; right: 30px; z-index: 1001; pointer-events: none; opacity: 0; transition: opacity 1s ease-in-out; display: flex; flex-direction: column; align-items: center; }
-        .pinch-container { position: relative; width: 70px; height: 70px; background: rgba(255,255,255,0.03); border-radius: 50%; }
-        .finger { position: absolute; width: 18px; height: 18px; background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.5); border-radius: 50%; top: 50%; left: 50%; }
-        .finger-1 { animation: pinch-move-1 3.5s infinite ease-in-out; }
-        .finger-2 { animation: pinch-move-2 3.5s infinite ease-in-out; }
-        @keyframes pinch-move-1 { 0%, 100% { transform: translate(-110%, -110%); opacity: 0.1; } 50% { transform: translate(-10%, -10%); opacity: 0.6; } }
-        @keyframes pinch-move-2 { 0%, 100% { transform: translate(40%, 40%); opacity: 0.1; } 50% { transform: translate(-10%, -10%); opacity: 0.6; } }
-        .zoom-text { color: white; font-size: 9px; margin-top: 12px; opacity: 0.4; letter-spacing: 1px; text-align: center; font-weight: 500; }
-
-        @keyframes pulse-marker { 0% { stroke-width: 2; stroke-opacity: 0.8; } 50% { stroke-width: 12; stroke-opacity: 0.1; } 100% { stroke-width: 2; stroke-opacity: 0.8; } }
-        .pulsing-marker { animation: pulse-marker 3s infinite ease-in-out; }
-
-        .leaflet-popup-content-wrapper { background-color: rgba(25, 25, 25, 0.95) !important; backdrop-filter: blur(8px); color: #e0e0e0 !important; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); }
-        .agac-popup-baslik { font-size: 14px; font-weight: 600; color: #2ecc71; border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 6px; margin-bottom: 8px; }
-        .agac-popup-satir { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 12px; }
+        body { margin: 0; padding: 0; font-family: sans-serif; overflow: hidden; }
+        #map { height: 100vh; width: 100vw; background-color: #111; }
+        .sidebar { position: fixed; top: 15px; left: 15px; width: 300px; bottom: 15px; background: rgba(20,20,20,0.9); color: white; z-index: 1000; border-radius: 15px; padding: 15px; display: flex; flex-direction: column; border: 1px solid #333; }
+        .excel-kutu-container { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+        .veri-kutusu { background: #222; padding: 10px; border-radius: 8px; text-align: center; border: 1px solid #444; }
+        .veri-baslik { font-size: 10px; color: #888; text-transform: uppercase; }
+        .veri-deger { font-size: 16px; font-weight: bold; color: #2ecc71; margin-top: 5px; }
+        .agac-popup-satir { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px; border-bottom: 1px solid #333; }
     </style>
 </head>
 <body>
-
     <div class="sidebar">
-        <div class="sidebar-header">
-            <div class="sidebar-title">Project SenTree</div>
-            <div class="sidebar-location">📍ALMAN BÜYÜKELÇİLİĞİ - TARABYA</div>
-            <p class="sidebar-subtitle">GIS TABANLI KENTSEL EKOSİSTEM HİZMETLERİ TAKİP SİSTEMİ</p>
-            <div class="sidebar-powered">Powered by ClimEra Projects</div>
-        </div>
-        <div class="sidebar-content">
-            <div id="excel-verileri">Veriler yükleniyor...</div>
-        </div>
+        <h2 style="margin:0; font-size:20px;">Project SenTree</h2>
+        <div id="status" style="font-size:11px; color:#aaa; margin-top:5px;">Veri aranıyor...</div>
+        <div id="excel-verileri" style="margin-top:20px; flex-grow:1; overflow-y:auto;"></div>
     </div>
-
-    <div id="zoomGuide" class="zoom-guide">
-        <div class="pinch-container">
-            <div class="finger finger-1"></div>
-            <div class="finger finger-2"></div>
-        </div>
-        <div class="zoom-text">ETKİLEŞİM İÇİN <br> DOKUNUN</div>
-    </div>
-
     <div id="map"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -75,135 +31,69 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
     <script>
-        // Harita Başlangıç Kurulumu (Merkez önemli değil, GeoJSON belirleyecek)
-        var map = L.map('map', { 
-            zoomControl: false, attributionControl: false, 
-            minZoom: 12, zoomSnap: 0.1, zoomDelta: 0.1
-        });
-
-        var globalAnaKatman; 
+        var map = L.map('map', { zoomControl: false, attributionControl: false }).setView([41.1350, 29.0614], 16);
+        var markers = L.markerClusterGroup();
         
-        var markers = L.markerClusterGroup({
-            showCoverageOnHover: false,
-            maxClusterRadius: 50
-        });
-
-        // --- GEOJSON YÜKLEME VE OTOMATİK SIĞDIRMA ---
-        fetch('veri.geojson')
-            .then(response => response.json())
-            .then(data => {
-                globalAnaKatman = L.geoJSON(data, {
-                    style: { color: "darkgray", weight: 1, opacity: 0.6, fillColor: "gray", fillOpacity: 0.1 }
-                }).addTo(map);
-                
-                // GeoJSON yüklendikten sonra haritayı otomatik sığdır
-                map.fitBounds(globalAnaKatman.getBounds(), {
-                    paddingTopLeft: [360, 20], // Sol panel için pay bırakıldı
-                    paddingBottomRight: [20, 20]
-                });
-            })
-            .catch(err => console.error("GeoJSON yüklenemedi:", err));
-
+        // CSV URL (Burayı kendi GID numaranızla güncellemeyi unutmayın)
         var csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQgLRxnEhblACdZ6LTb4NINI8RwcLotC6j-h9AxTm1C0SffFWel0PnzOoUWE1Jh9tC1EUOWhGQE4gow/pub?gid=942754741&single=true&output=csv";
+
+        function temizle(val) {
+            if(!val) return 0;
+            // Tırnakları, boşlukları temizle ve virgülü noktaya çevir
+            return val.toString().replace(/"/g, '').replace(/ /g, '').replace(',', '.');
+        }
 
         Papa.parse(csvUrl, {
             download: true,
-            header: false,
+            header: true, // Sütunları isimle çağırmak için true yaptık
+            skipEmptyLines: true,
             complete: function(results) {
-                var veriler = results.data;
-                if(veriler && veriler.length > 1) {
-                    var basliklar = veriler[0]; 
-                    
-                    markers.clearLayers();
+                var data = results.data;
+                document.getElementById('status').innerText = data.length + " ağaç bulundu. İşleniyor...";
 
-                    for (var i = 1; i < veriler.length; i++) {
-                        var satir = veriler[i];
-                        
-                        // Sütun indeksleri (A=0, B=1, ... F=5, H=7, I=8)
-                        var lat = parseFloat(satir[7]); // H sütunu
-                        var lng = parseFloat(satir[8]); // I (ı) sütunu
-                        var simgeBoyutu = parseFloat(satir[5]); // F sütunu
+                data.forEach(function(row) {
+                    // Sütun isimlerine göre veri çekme (Hata payını sıfırlar)
+                    var lat = parseFloat(temizle(row["Enlem"]));
+                    var lng = parseFloat(temizle(row["Boylam"]));
+                    var boy = parseFloat(temizle(row["Tepe Tacı Çapı"])) || 5;
 
-                        // Eğer hücre boşsa veya geçerli bir sayı değilse varsayılan boyut (8) ata
-                        if (isNaN(simgeBoyutu) || simgeBoyutu <= 0) {
-                            simgeBoyutu = 8;
-                        }
+                    if (!isNaN(lat) && !isNaN(lng)) {
+                        var p = "<div style='color:white; background:#111; padding:5px;'>";
+                        p += "<b>" + (row["Ağaç Türü"] || "Bilinmiyor") + "</b><hr>";
+                        p += "<div class='agac-popup-satir'><span>Boy:</span><span>" + row["Ağaç Boyu"] + "</span></div>";
+                        p += "<div class='agac-popup-satir'><span>Çap:</span><span>" + row["Gövde Çapı"] + "</span></div>";
+                        p += "</div>";
 
-                        if (!isNaN(lat) && !isNaN(lng)) {
-                            var popupHTML = "<div style='min-width:180px'><h3 class='agac-popup-baslik'>Biyometrik Analiz</h3>";
-                            
-                            // Popup verileri: A, B, C, G, H, I, J (İndeks: 0, 1, 2, 6, 7, 8, 9)
-                            [0, 1, 2, 6, 7, 8, 9].forEach(idx => {
-                                if(satir[idx]) {
-                                    popupHTML += `<div class="agac-popup-satir"><span>${basliklar[idx]}</span><span style="font-weight:600">${satir[idx]}</span></div>`;
-                                }
-                            });
-                            popupHTML += "</div>";
-
-                            var marker = L.circleMarker([lat, lng], {
-                                radius: simgeBoyutu, // F sütunundan gelen boyut
-                                fillColor: "#2ecc71", color: "#2ecc71", weight: 2, fillOpacity: 0.8, className: 'pulsing-marker'
-                            }).bindPopup(popupHTML);
-
-                            markers.addLayer(marker);
-                        }
+                        var m = L.circleMarker([lat, lng], {
+                            radius: boy,
+                            fillColor: "#2ecc71",
+                            color: "#fff",
+                            weight: 1,
+                            fillOpacity: 0.7
+                        }).bindPopup(p);
+                        markers.addLayer(m);
                     }
-                    map.addLayer(markers);
+                });
 
-                    // Sabit panel verileri: K, L, M, N, O, P (İndeks: 10, 11, 12, 13, 14, 15)
-                    var panelSutunlari = [10, 11, 12, 13, 14, 15]; 
-                    var sonGuncelVeri = null;
-                    
-                    // Geçerli son satırı bulmak için kontrol
-                    for (var j = veriler.length - 1; j >= 1; j--) {
-                        if (veriler[j][10] && veriler[j][10].trim() !== "") { // K sütununu kontrol et
-                            sonGuncelVeri = veriler[j];
-                            break;
-                        }
-                    }
+                map.addLayer(markers);
+                if(markers.getLayers().length > 0) map.fitBounds(markers.getBounds());
 
-                    if (sonGuncelVeri) {
-                        var html = '<div class="excel-kutu-container">';
-                        panelSutunlari.forEach(index => {
-                            var val = sonGuncelVeri[index] ? sonGuncelVeri[index] : "0";
-                            html += `<div class="veri-kutusu"><div class="veri-baslik">${basliklar[index]}</div><div class="veri-deger">${val}</div></div>`;
-                        });
-                        html += '</div>';
-                        document.getElementById('excel-verileri').innerHTML = html;
-                    }
-                }
+                // Panel Verileri (K, L, M, N, O sütunları için son satırı bul)
+                var son = data[0]; // Sizin tabloda veriler genelde ilk satırda toplanmış
+                var panelHtml = '<div class="excel-kutu-container">';
+                var hedefler = ["Mevcut CO2 Stoku", "Yıllık CO2 Stok Artışı", "Yıllık O2 Üretimi", "Mevcut CO2 Piyasa Değeri", "Mevcut Ağaç Sayısı"];
+                
+                hedefler.forEach(function(h) {
+                    var deger = son[h] || "0";
+                    panelHtml += `<div class="veri-kutusu"><div class="veri-baslik">${h}</div><div class="veri-deger">${deger}</div></div>`;
+                });
+                panelHtml += '</div>';
+                document.getElementById('excel-verileri').innerHTML = panelHtml;
+            },
+            error: function(err) {
+                document.getElementById('status').innerHTML = "<b style='color:red'>Bağlantı Hatası!</b>";
             }
         });
-
-        var idleTimer;
-        var zoomGuide = document.getElementById('zoomGuide');
-
-        function showGuide() { zoomGuide.style.opacity = "1"; }
-        function hideGuide() { zoomGuide.style.opacity = "0"; }
-
-        function resetView() {
-            if (globalAnaKatman) {
-                map.closePopup(); 
-                map.fitBounds(globalAnaKatman.getBounds(), { paddingTopLeft: [360, 20], paddingBottomRight: [20, 20], animate: true });
-                setTimeout(showGuide, 1500);
-            }
-        }
-
-        function handleInteraction() {
-            hideGuide(); 
-            clearTimeout(idleTimer);
-            idleTimer = setTimeout(resetView, 15000); 
-        }
-
-        window.onload = () => {
-            handleInteraction(); 
-            setTimeout(showGuide, 4500); 
-        };
-        
-        document.addEventListener('touchstart', handleInteraction, {passive: true});
-        document.addEventListener('mousedown', handleInteraction);
-        map.on('zoomstart', handleInteraction);
-        map.on('dragstart', handleInteraction);
     </script>
 </body>
 </html>
