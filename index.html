@@ -5,30 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SenTree - GIS Tabanlı Kentsel Ekosistem Hizmetleri Takip Sistemi</title>
     
-    <!-- Leaflet Temel CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    
-    <!-- Marker Cluster CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
-    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     
     <style>
         body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; }
         #map { height: 100vh; width: 100vw; background-color: #161616; z-index: 1; }
 
-        /* --- SOL PANEL --- */
-        .sidebar {
-            position: fixed; top: 20px; left: 15px; bottom: 20px; width: 310px;       
-            background-color: rgba(30, 30, 30, 0.65); 
-            backdrop-filter: blur(15px) saturate(180%); 
-            -webkit-backdrop-filter: blur(15px) saturate(180%); 
-            border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; 
-            color: #e0e0e0; z-index: 1000; display: flex; flex-direction: column;
-            box-sizing: border-box; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); 
-        }
-
+        .sidebar { position: fixed; top: 20px; left: 15px; bottom: 20px; width: 310px; background-color: rgba(30, 30, 30, 0.65); backdrop-filter: blur(15px) saturate(180%); -webkit-backdrop-filter: blur(15px) saturate(180%); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; color: #e0e0e0; z-index: 1000; display: flex; flex-direction: column; box-sizing: border-box; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); }
         .sidebar-header { padding: 25px 20px 15px 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); background-color: rgba(0, 0, 0, 0.2); }
         .sidebar-title { margin: 0; font-size: 24px; font-weight: 700; color: #ffffff; letter-spacing: 0.5px; }
         .sidebar-location { margin: 4px 0 0 0; font-size: 13px; font-weight: 600; color: #ffffff; opacity: 0.8; }
@@ -36,43 +21,26 @@
         .sidebar-powered { text-align: right; margin-top: 10px; font-size: 9px; color: #777; font-style: italic; }
         .sidebar-content { padding: 15px; flex-grow: 1; overflow-y: auto; }
 
-        /* VERİ KARTLARI */
         .excel-kutu-container { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 5px; }
         .veri-kutusu { background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 12px; text-align: center; }
         .veri-baslik { font-size: 10px; color: #999; text-transform: uppercase; margin-bottom: 6px; }
         .veri-deger { font-size: 16px; font-weight: 600; color: #ffffff; }
 
-        /* KÜMELEME SİMGELERİ ÖZELLEŞTİRME */
         .marker-cluster-small { background-color: rgba(46, 204, 113, 0.6); }
-        .marker-cluster-small div { background-color: rgba(46, 204, 113, 0.9); color: white; font-weight: bold;}
-        .marker-cluster-medium { background-color: rgba(39, 174, 96, 0.6); }
-        .marker-cluster-medium div { background-color: rgba(39, 174, 96, 0.9); color: white; font-weight: bold;}
-        .marker-cluster-large { background-color: rgba(25, 111, 61, 0.6); }
-        .marker-cluster-large div { background-color: rgba(25, 111, 61, 0.9); color: white; font-weight: bold;}
+        .marker-cluster-small div { background-color: rgba(46, 204, 113, 0.8); color: #fff; font-weight: bold; }
 
-        /* --- SADELEŞTİRİLMİŞ ZOOM REHBERİ --- */
-        .zoom-guide {
-            position: fixed; bottom: 30px; right: 30px; z-index: 1001;
-            pointer-events: none; opacity: 0; transition: opacity 1s ease-in-out;
-            display: flex; flex-direction: column; align-items: center;
-        }
+        .zoom-guide { position: fixed; bottom: 30px; right: 30px; z-index: 1001; pointer-events: none; opacity: 0; transition: opacity 1s ease-in-out; display: flex; flex-direction: column; align-items: center; }
         .pinch-container { position: relative; width: 70px; height: 70px; background: rgba(255,255,255,0.03); border-radius: 50%; }
-        .finger {
-            position: absolute; width: 18px; height: 18px; 
-            background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.5);
-            border-radius: 50%; top: 50%; left: 50%;
-        }
+        .finger { position: absolute; width: 18px; height: 18px; background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.5); border-radius: 50%; top: 50%; left: 50%; }
         .finger-1 { animation: pinch-move-1 3.5s infinite ease-in-out; }
         .finger-2 { animation: pinch-move-2 3.5s infinite ease-in-out; }
         @keyframes pinch-move-1 { 0%, 100% { transform: translate(-110%, -110%); opacity: 0.1; } 50% { transform: translate(-10%, -10%); opacity: 0.6; } }
         @keyframes pinch-move-2 { 0%, 100% { transform: translate(40%, 40%); opacity: 0.1; } 50% { transform: translate(-10%, -10%); opacity: 0.6; } }
         .zoom-text { color: white; font-size: 9px; margin-top: 12px; opacity: 0.4; letter-spacing: 1px; text-align: center; font-weight: 500; }
 
-        /* Ağaç Parlama Efekti */
         @keyframes pulse-marker { 0% { stroke-width: 2; stroke-opacity: 0.8; } 50% { stroke-width: 12; stroke-opacity: 0.1; } 100% { stroke-width: 2; stroke-opacity: 0.8; } }
         .pulsing-marker { animation: pulse-marker 3s infinite ease-in-out; }
 
-        /* Popup Tasarımı */
         .leaflet-popup-content-wrapper { background-color: rgba(25, 25, 25, 0.95) !important; backdrop-filter: blur(8px); color: #e0e0e0 !important; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); }
         .agac-popup-baslik { font-size: 14px; font-weight: 600; color: #2ecc71; border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 6px; margin-bottom: 8px; }
         .agac-popup-satir { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 12px; }
@@ -85,7 +53,7 @@
             <div class="sidebar-title">Project SenTree</div>
             <div class="sidebar-location">📍LIFEPARK İSTANBUL</div>
             <p class="sidebar-subtitle">GIS TABANLI KENTSEL EKOSİSTEM HİZMETLERİ TAKİP SİSTEMİ</p>
-            <div class="sidebar-powered">Powered by CLIMERA Projects</div>
+            <div class="sidebar-powered">Powered by ClimEra Projects</div>
         </div>
         <div class="sidebar-content">
             <div id="excel-verileri">Veriler yükleniyor...</div>
@@ -102,31 +70,25 @@
 
     <div id="map"></div>
 
-    <!-- Leaflet JS ve Marker Cluster JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
     <script>
-        // --- 1. HARİTA AYARLARI ---
-        var guneyBati = L.latLng(41.1600, 28.9800); 
-        var kuzeyDogu = L.latLng(41.1800, 29.0100); 
-        var sinirlar = L.latLngBounds(guneyBati, kuzeyDogu);
-
+        // Harita Başlangıç Kurulumu (Merkez önemli değil, GeoJSON belirleyecek)
         var map = L.map('map', { 
             zoomControl: false, attributionControl: false, 
-            maxBounds: sinirlar, maxBoundsViscosity: 1.0, minZoom: 12,
-            zoomSnap: 0.1, zoomDelta: 0.1
+            minZoom: 12, zoomSnap: 0.1, zoomDelta: 0.1
         });
 
         var globalAnaKatman; 
-
-        // KÜMELEME GRUBUNU TANIMLA
-        var markerClusters = L.markerClusterGroup({
-            showCoverageOnHover: false, // Üzerine gelince alanı çizmesin
-            maxClusterRadius: 50 // Kümelerin oluşma hassasiyeti (Piksel cinsinden)
+        
+        var markers = L.markerClusterGroup({
+            showCoverageOnHover: false,
+            maxClusterRadius: 50
         });
 
-        // --- 2. VERİ YÜKLEME ---
+        // --- GEOJSON YÜKLEME VE OTOMATİK SIĞDIRMA ---
         fetch('veri.geojson')
             .then(response => response.json())
             .then(data => {
@@ -134,24 +96,31 @@
                     style: { color: "darkgray", weight: 1, opacity: 0.6, fillColor: "gray", fillOpacity: 0.1 }
                 }).addTo(map);
                 
-                // İlk açılış konumu (Uzak ve ferah görünüm)
+                // GeoJSON yüklendikten sonra haritayı otomatik sığdır
                 map.fitBounds(globalAnaKatman.getBounds(), {
-                    paddingTopLeft: [360, 20], 
+                    paddingTopLeft: [360, 20], // Sol panel için pay bırakıldı
                     paddingBottomRight: [20, 20]
                 });
-            });
+            })
+            .catch(err => console.error("GeoJSON yüklenemedi:", err));
 
         var csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTd-AbM2ztRwxYmIp-58BvishVCJG3xKSQj-WgrI3_J6_ODF-zHTgM9rYmb-lI9LwRvdB0LMZFJFsn4/pub?output=csv";
 
         Papa.parse(csvUrl, {
-            download: true, header: false, 
+            download: true,
+            header: false,
             complete: function(results) {
                 var veriler = results.data;
                 if(veriler && veriler.length > 1) {
                     var basliklar = veriler[0]; 
+                    
+                    markers.clearLayers();
+
                     for (var i = 1; i < veriler.length; i++) {
                         var satir = veriler[i];
-                        var lat = parseFloat(satir[6]); var lng = parseFloat(satir[7]); 
+                        var lat = parseFloat(satir[6]); 
+                        var lng = parseFloat(satir[7]); 
+
                         if (!isNaN(lat) && !isNaN(lng)) {
                             var popupHTML = "<div style='min-width:180px'><h3 class='agac-popup-baslik'>Biyometrik Analiz</h3>";
                             [0,1,2,3,4,5,8].forEach(idx => {
@@ -163,24 +132,17 @@
                                 radius: 8, fillColor: "#2ecc71", color: "#2ecc71", weight: 2, fillOpacity: 0.8, className: 'pulsing-marker'
                             }).bindPopup(popupHTML);
 
-                            marker.on('touchstart', function() { this.setStyle({weight: 15}); });
-                            marker.on('touchend', function() { this.setStyle({weight: 2}); });
-
-                            // MARKER'I HARİTAYA DEĞİL, KÜMELEME GRUBUNA EKLE
-                            markerClusters.addLayer(marker);
+                            markers.addLayer(marker);
                         }
                     }
-
-                    // KÜMELEME GRUBUNU HARİTAYA EKLE
-                    map.addLayer(markerClusters);
+                    map.addLayer(markers);
 
                     var panelSutunlari = [9, 10, 11, 12, 13, 14]; 
-                    
-                    // Veriyi kontrol et ve son dolu veriyi bul (Daha güvenli yöntem)
                     var sonGuncelVeri = null;
-                    for(var k = veriler.length - 1; k > 0; k--) {
-                        if(veriler[k] && veriler[k][9] && veriler[k][9].trim() !== "") {
-                            sonGuncelVeri = veriler[k];
+                    
+                    for (var j = veriler.length - 1; j >= 1; j--) {
+                        if (veriler[j][9] && veriler[j][9].trim() !== "") {
+                            sonGuncelVeri = veriler[j];
                             break;
                         }
                     }
@@ -188,19 +150,16 @@
                     if (sonGuncelVeri) {
                         var html = '<div class="excel-kutu-container">';
                         panelSutunlari.forEach(index => {
-                            var val = sonGuncelVeri[index] || "0";
+                            var val = sonGuncelVeri[index] ? sonGuncelVeri[index] : "0";
                             html += `<div class="veri-kutusu"><div class="veri-baslik">${basliklar[index]}</div><div class="veri-deger">${val}</div></div>`;
                         });
                         html += '</div>';
                         document.getElementById('excel-verileri').innerHTML = html;
-                    } else {
-                         document.getElementById('excel-verileri').innerHTML = "Gösterilecek panel verisi bulunamadı.";
                     }
                 }
             }
         });
 
-        // --- 3. REHBER VE SIFIRLAMA (Hareketsiz Stabil Versiyon) ---
         var idleTimer;
         var zoomGuide = document.getElementById('zoomGuide');
 
@@ -210,16 +169,8 @@
         function resetView() {
             if (globalAnaKatman) {
                 map.closePopup(); 
-                // Sadece konuma gider, ekstra zoom sarsıntısı yapmaz
-                map.fitBounds(globalAnaKatman.getBounds(), { 
-                    paddingTopLeft: [360, 20], 
-                    paddingBottomRight: [20, 20], 
-                    animate: true 
-                });
-                
-                setTimeout(() => { 
-                    showGuide(); 
-                }, 1500);
+                map.fitBounds(globalAnaKatman.getBounds(), { paddingTopLeft: [360, 20], paddingBottomRight: [20, 20], animate: true });
+                setTimeout(showGuide, 1500);
             }
         }
 
