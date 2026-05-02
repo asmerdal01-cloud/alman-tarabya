@@ -118,18 +118,31 @@
 
                     for (var i = 1; i < veriler.length; i++) {
                         var satir = veriler[i];
-                        var lat = parseFloat(satir[6]); 
-                        var lng = parseFloat(satir[7]); 
+                        
+                        // Sütun indeksleri (A=0, B=1, ... F=5, H=7, I=8)
+                        var lat = parseFloat(satir[7]); // H sütunu
+                        var lng = parseFloat(satir[8]); // I (ı) sütunu
+                        var simgeBoyutu = parseFloat(satir[5]); // F sütunu
+
+                        // Eğer hücre boşsa veya geçerli bir sayı değilse varsayılan boyut (8) ata
+                        if (isNaN(simgeBoyutu) || simgeBoyutu <= 0) {
+                            simgeBoyutu = 8;
+                        }
 
                         if (!isNaN(lat) && !isNaN(lng)) {
                             var popupHTML = "<div style='min-width:180px'><h3 class='agac-popup-baslik'>Biyometrik Analiz</h3>";
-                            [0,1,2,3,4,5,8].forEach(idx => {
-                                if(satir[idx]) popupHTML += `<div class="agac-popup-satir"><span>${basliklar[idx]}</span><span style="font-weight:600">${satir[idx]}</span></div>`;
+                            
+                            // Popup verileri: A, B, C, G, H, I, J (İndeks: 0, 1, 2, 6, 7, 8, 9)
+                            [0, 1, 2, 6, 7, 8, 9].forEach(idx => {
+                                if(satir[idx]) {
+                                    popupHTML += `<div class="agac-popup-satir"><span>${basliklar[idx]}</span><span style="font-weight:600">${satir[idx]}</span></div>`;
+                                }
                             });
                             popupHTML += "</div>";
 
                             var marker = L.circleMarker([lat, lng], {
-                                radius: 8, fillColor: "#2ecc71", color: "#2ecc71", weight: 2, fillOpacity: 0.8, className: 'pulsing-marker'
+                                radius: simgeBoyutu, // F sütunundan gelen boyut
+                                fillColor: "#2ecc71", color: "#2ecc71", weight: 2, fillOpacity: 0.8, className: 'pulsing-marker'
                             }).bindPopup(popupHTML);
 
                             markers.addLayer(marker);
@@ -137,11 +150,13 @@
                     }
                     map.addLayer(markers);
 
-                    var panelSutunlari = [9, 10, 11, 12, 13, 14]; 
+                    // Sabit panel verileri: K, L, M, N, O, P (İndeks: 10, 11, 12, 13, 14, 15)
+                    var panelSutunlari = [10, 11, 12, 13, 14, 15]; 
                     var sonGuncelVeri = null;
                     
+                    // Geçerli son satırı bulmak için kontrol
                     for (var j = veriler.length - 1; j >= 1; j--) {
-                        if (veriler[j][9] && veriler[j][9].trim() !== "") {
+                        if (veriler[j][10] && veriler[j][10].trim() !== "") { // K sütununu kontrol et
                             sonGuncelVeri = veriler[j];
                             break;
                         }
