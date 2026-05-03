@@ -294,14 +294,18 @@
             setTimeout(() => { modal.classList.add('show'); }, 10);
             if(currentChart) currentChart.destroy();
             var ctx = document.getElementById('chartCanvas').getContext('2d'); var isTreeCount = baslik.toLocaleLowerCase('tr-TR').includes("ağaç");
+            
             if (isTreeCount && (ibreli > 0 || yaprakli > 0)) {
+                // AĞAÇ TÜRLERİ İÇİN OLAN RENKLER (Yeşil, Turuncu, Mor)
                 var chartLabels = isNaN(eski) ? ['Mevcut Dönem'] : ['Önceki Dönem', 'Mevcut Dönem']; var diger = mevcut - (ibreli + yaprakli); if (diger < 0) diger = 0;
                 var datasets = [];
                 if (!isNaN(eski)) { datasets.push({ label: 'Geçmiş Toplam', data: [eski, 0], backgroundColor: '#95a5a6', borderRadius: 4 }); datasets.push({ label: 'İbreli', data: [0, ibreli], backgroundColor: '#27ae60', borderRadius: 4 }); datasets.push({ label: 'Yapraklı', data: [0, yaprakli], backgroundColor: '#f39c12', borderRadius: 4 }); if(diger > 0) datasets.push({ label: 'Diğer', data: [0, diger], backgroundColor: '#8e44ad', borderRadius: 4 });
                 } else { datasets.push({ label: 'İbreli', data: [ibreli], backgroundColor: '#27ae60', borderRadius: 4 }); datasets.push({ label: 'Yapraklı', data: [yaprakli], backgroundColor: '#f39c12', borderRadius: 4 }); if(diger > 0) datasets.push({ label: 'Diğer', data: [diger], backgroundColor: '#8e44ad', borderRadius: 4 }); }
                 currentChart = new Chart(ctx, { type: 'bar', data: { labels: chartLabels, datasets: datasets }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, labels: {color: '#eee'} } }, scales: { x: { stacked: true, ticks: { color: '#eee', font: {size: 13, weight: 'bold'} }, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { color: '#bbb' }, grid: { color: 'rgba(255,255,255,0.05)' } } } } });
             } else {
-                var chartLabels = isNaN(eski) ? ['Mevcut Dönem'] : ['Önceki Dönem', 'Mevcut Dönem']; var chartData = isNaN(eski) ? [mevcut] : [eski, mevcut]; var chartColors = isNaN(eski) ? ['#e74c3c'] : ['#95a5a6', '#e74c3c']; 
+                // DİĞER STANDART VERİLER İÇİN OLAN RENKLER (Kırmızı iptal, Sentree Yeşili eklendi)
+                var chartLabels = isNaN(eski) ? ['Mevcut Dönem'] : ['Önceki Dönem', 'Mevcut Dönem']; var chartData = isNaN(eski) ? [mevcut] : [eski, mevcut]; 
+                var chartColors = isNaN(eski) ? ['#2ecc71'] : ['#95a5a6', '#2ecc71']; 
                 currentChart = new Chart(ctx, { type: 'bar', data: { labels: chartLabels, datasets: [{ label: birim ? `Birim: ${birim}` : 'Değer', data: chartData, backgroundColor: chartColors, borderRadius: 8, barPercentage: 0.5 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { color: '#bbb', font: {size: 11} }, grid: { color: 'rgba(255,255,255,0.05)' } }, x: { ticks: { color: '#eee', font: {size: 13, weight: 'bold'} }, grid: { display: false } } } } });
             }
         }
