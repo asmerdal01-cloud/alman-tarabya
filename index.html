@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SENTREE - AKILLI KİOSK ARAYÜZÜ</title>
+    <title>SENTREE - SARSINTISIZ KİOSK ARAYÜZÜ</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
@@ -47,18 +47,7 @@
         .trend-down { color: #e74c3c; font-size: 14px; }
         .trend-flat { color: #95a5a6; font-size: 14px; }
 
-        .leaflet-overlay-pane svg { will-change: transform; }
-
-        /* NEON ANİMASYONU */
-        .highlight-building {
-            pointer-events: none;
-            filter: drop-shadow(0 0 12px rgba(231, 76, 60, 0.9)); 
-            animation: safe-pulse 1s infinite alternate ease-in-out;
-        }
-        @keyframes safe-pulse {
-            from { opacity: 0.3; }
-            to { opacity: 1.0; }
-        }
+        /* Tüm CSS Vurgu Animasyon Sınıfları Silindi (Titreme Kökünden Yok Edildi) */
 
         #iosModal { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.4); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 9999; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s ease; }
         #iosModal.show { opacity: 1; }
@@ -139,8 +128,9 @@
         var transformedKiosk = proj4("EPSG:5254", "EPSG:4326", rawKioskCoords);
         var kioskLatLng = L.latLng(transformedKiosk[1], transformedKiosk[0]);
         
-        // BAŞLANGIÇ ZOOM SEVİYESİ 18'DEN 19'A ÇIKARTILDI
+        // SARSINTIYI %100 BİTİREN CANVAS MOTORU AKTİF
         var map = L.map('map', { 
+            preferCanvas: true, // Canvas açıldı, titreme ihtimali ortadan kalktı
             zoomControl: false, 
             attributionControl: false, 
             minZoom: 12, 
@@ -155,26 +145,14 @@
         var aktifVurgularKatmani = L.featureGroup().addTo(map);
 
         var rawPoiListesi = [
-            { 
-                ad: "tuvalet", 
-                tip: "polygon", 
-                coords: [
-                    [420944.7015, 4555949.0085], 
-                    [420953.7871, 4555942.5953],
-                    [420939.1770, 4555922.0605],
-                    [420929.9926, 4555928.9925]
-                ]
-            },
+            { ad: "tuvalet", tip: "polygon", coords: [ [420944.7015, 4555949.0085], [420953.7871, 4555942.5953], [420939.1770, 4555922.0605], [420929.9926, 4555928.9925] ] },
             { ad: "lokanta", tip: "point", x: 420962.2129, y: 4556130.5068 },
             { ad: "tuvalet", tip: "point", x: 420952.2674, y: 4556029.0993 }
         ];
 
         var poiListesi = rawPoiListesi.map(poi => {
             if (poi.tip === "polygon") {
-                var latLngs = poi.coords.map(c => {
-                    var trans = proj4("EPSG:5254", "EPSG:4326", [c[0], c[1]]);
-                    return [trans[1], trans[0]]; 
-                });
+                var latLngs = poi.coords.map(c => { var trans = proj4("EPSG:5254", "EPSG:4326", [c[0], c[1]]); return [trans[1], trans[0]]; });
                 return { ad: poi.ad, tip: "polygon", latLngs: latLngs };
             } else {
                 var trans = proj4("EPSG:5254", "EPSG:4326", [poi.x, poi.y]);
@@ -184,37 +162,59 @@
 
         function handleKeyPress(e) { if (e.key === 'Enter') searchLocation(); }
 
+        // JS TABANLI SARSINTISIZ ANİMASYON MOTORU
+        var glowLayers = [];
+        var animasyonZamanlayici = null;
+
+        function baslatJSAnimasyon() {
+            var pulseOpacity = 0.2;
+            var pulseDir = 0.04; // Hız
+            animasyonZamanlayici = setInterval(() => {
+                pulseOpacity += pulseDir;
+                if(pulseOpacity > 0.6) { pulseOpacity = 0.6; pulseDir = -0.04; }
+                if(pulseOpacity < 0.1) { pulseOpacity = 0.1; pulseDir = 0.04; }
+                
+                glowLayers.forEach(katman => {
+                    // Sadece gölge görevi gören dış katmanın şeffaflığı değişir
+                    if(katman.setStyle) { katman.setStyle({ opacity: pulseOpacity, fillOpacity: pulseOpacity / 2 }); }
+                });
+            }, 40); // 40ms = ~25 FPS akıcılık
+        }
+
         function searchLocation() {
             var searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
             var resultsDiv = document.getElementById('searchResults');
-            
-            if (searchTerm.length < 2) { 
-                resultsDiv.innerHTML = "En az 2 harf girin."; 
-                return; 
-            }
+            if (searchTerm.length < 2) { resultsDiv.innerHTML = "En az 2 harf girin."; return; }
 
             var foundPOIs = poiListesi.filter(poi => poi.ad.includes(searchTerm));
 
             if (foundPOIs.length > 0) {
                 resultsDiv.innerHTML = ""; 
                 aktifVurgularKatmani.clearLayers();
+                glowLayers = []; // Animasyon havuzunu sıfırla
+                if(animasyonZamanlayici) clearInterval(animasyonZamanlayici);
 
                 foundPOIs.forEach(poi => {
-                    var vurgu;
+                    var coreLayer, glowLayer;
+                    
                     if (poi.tip === "polygon") {
-                        vurgu = L.polygon(poi.latLngs, {
-                            color: '#e74c3c', fillColor: '#e74c3c', weight: 2, className: 'highlight-building' 
-                        });
+                        // Sahte Neon Efekti: Altına kalın/şeffaf, üstüne ince/net iki katman çizilir.
+                        glowLayer = L.polygon(poi.latLngs, { color: '#e74c3c', weight: 14, opacity: 0.3, fillOpacity: 0.1, lineJoin: 'round', interactive: false });
+                        coreLayer = L.polygon(poi.latLngs, { color: '#e74c3c', weight: 3, opacity: 1, fillOpacity: 0.7, interactive: false });
                     } else {
-                        vurgu = L.circleMarker([poi.lat, poi.lng], {
-                            radius: 12, color: '#e74c3c', fillColor: '#e74c3c', weight: 2, className: 'highlight-building'
-                        });
+                        glowLayer = L.circleMarker([poi.lat, poi.lng], { radius: 18, color: 'transparent', fillColor: '#e74c3c', fillOpacity: 0.3, interactive: false });
+                        coreLayer = L.circleMarker([poi.lat, poi.lng], { radius: 8, color: '#fff', weight: 2, fillColor: '#e74c3c', fillOpacity: 1, interactive: false });
                     }
-                    aktifVurgularKatmani.addLayer(vurgu);
+                    
+                    aktifVurgularKatmani.addLayer(glowLayer);
+                    aktifVurgularKatmani.addLayer(coreLayer);
+                    glowLayers.push(glowLayer); // Sadece gölgeyi animasyon listesine ekle
                 });
 
                 map.flyToBounds(aktifVurgularKatmani.getBounds(), { padding: [80, 80], maxZoom: 19.5, duration: 2.5 });
                 document.getElementById('clearRouteBtn').style.display = 'block';
+                
+                baslatJSAnimasyon(); // JS Animasyonu Başlat
 
             } else {
                 resultsDiv.innerHTML = `<span style="color:#aaa">Konum bulunamadı.</span>`;
@@ -222,21 +222,17 @@
         }
 
         function clearHighlight() {
+            if(animasyonZamanlayici) clearInterval(animasyonZamanlayici);
+            glowLayers = [];
             aktifVurgularKatmani.clearLayers();
             document.getElementById('searchInput').value = "";
             document.getElementById('searchResults').innerHTML = "";
             document.getElementById('clearRouteBtn').style.display = 'none';
-            // YUVAYA DÖNÜŞ ZOOM SEVİYESİ DE 19'A ÇIKARTILDI
             map.flyTo(kioskLatLng, 19, { duration: 2 });
         }
 
         var globalAnaKatman; 
-        var markers = L.markerClusterGroup({ 
-            showCoverageOnHover: false, 
-            maxClusterRadius: 35, 
-            disableClusteringAtZoom: 40,
-            chunkedLoading: true 
-        });
+        var markers = L.markerClusterGroup({ showCoverageOnHover: false, maxClusterRadius: 35, disableClusteringAtZoom: 40, chunkedLoading: true });
 
         fetch('veri.geojson').then(response => response.json()).then(data => {
             globalAnaKatman = L.geoJSON(data, { coordsToLatLng: function (coords) { var transformed = proj4("EPSG:5254", "EPSG:4326", [coords[0], coords[1]]); return new L.LatLng(transformed[1], transformed[0]); }, style: { color: "darkgray", weight: 1, opacity: 0.6, fillColor: "gray", fillOpacity: 0.1 } }).addTo(map);
@@ -312,14 +308,8 @@
         
         // --- 15 SANİYE KURALI ---
         var idleTimer; 
-        function resetInteraction() { 
-            clearHighlight(); 
-            map.closePopup(); 
-        }
-        function handleInteraction() { 
-            clearTimeout(idleTimer); 
-            idleTimer = setTimeout(resetInteraction, 15000); 
-        }
+        function resetInteraction() { clearHighlight(); map.closePopup(); }
+        function handleInteraction() { clearTimeout(idleTimer); idleTimer = setTimeout(resetInteraction, 15000); }
 
         document.addEventListener('touchstart', handleInteraction, {passive: true}); 
         document.addEventListener('mousedown', handleInteraction); 
@@ -328,9 +318,6 @@
         map.on('dragstart', handleInteraction);
         
         handleInteraction();
-
-        // (İPTAL EDİLDİ) 60 Saniyelik Ekran Koruyucu Turu Kaldırıldı. Artık kiosk daha sabit duracak.
-
     </script>
 </body>
 </html>
