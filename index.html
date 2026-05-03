@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SENTREE - AKILLI KİOSK ARAYÜZÜ</title>
+    <title>SENTREE - KİOSK NİHAİ SÜRÜM</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
@@ -47,10 +47,11 @@
         .trend-down { color: #e74c3c; font-size: 14px; }
         .trend-flat { color: #95a5a6; font-size: 14px; }
 
-        /* KESİN ÇÖZÜM: SARSINTISIZ SAF SVG ANİMASYONU (Gölge/Filter Kaldırıldı) */
+        /* VURGU ANİMASYONU (Sarsıntı Kökünden Çözüldü: GPU Hızlandırmalı Opacity) */
         .highlight-building {
             pointer-events: none;
             animation: safe-pulse 1s infinite alternate ease-in-out;
+            transform: translateZ(0); /* GPU Hızlandırmasını Devreye Sokar */
         }
         @keyframes safe-pulse {
             from { fill-opacity: 0.2; stroke-opacity: 0.3; }
@@ -122,6 +123,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
+        // Saat Mantığı
         setInterval(() => {
             const now = new Date();
             const days = ["PAZAR", "PAZARTESİ", "SALI", "ÇARŞAMBA", "PERŞEMBE", "CUMA", "CUMARTESİ"];
@@ -136,7 +138,16 @@
         var transformedKiosk = proj4("EPSG:5254", "EPSG:4326", rawKioskCoords);
         var kioskLatLng = L.latLng(transformedKiosk[1], transformedKiosk[0]);
         
-        var map = L.map('map', { zoomControl: false, attributionControl: false, minZoom: 12, maxZoom: 25, zoomSnap: 0.1, zoomDelta: 0.1 }).setView(kioskLatLng, 18);
+        // 1. OPTİMİZASYON: PREFERCANVAS (Kasma ve donmaları bitiren GPU render motoru)
+        var map = L.map('map', { 
+            preferCanvas: true, 
+            zoomControl: false, 
+            attributionControl: false, 
+            minZoom: 12, 
+            maxZoom: 25, 
+            zoomSnap: 0.1, 
+            zoomDelta: 0.1 
+        }).setView(kioskLatLng, 18);
         
         var kioskIcon = L.divIcon({ html: '<div style="background-color:#3498db; width:16px; height:16px; border-radius:50%; border:3px solid white; box-shadow:0 0 10px rgba(0,0,0,0.5);"></div>', className: '', iconSize: [22, 22], iconAnchor: [11, 11] });
         L.marker(kioskLatLng, {icon: kioskIcon}).addTo(map).bindPopup("<b style='color:#3498db'>Şu An Buradasınız</b>").openPopup();
@@ -219,7 +230,14 @@
         }
 
         var globalAnaKatman; 
-        var markers = L.markerClusterGroup({ showCoverageOnHover: false, maxClusterRadius: 35, disableClusteringAtZoom: 40 });
+        
+        // 2. OPTİMİZASYON: CHUNKED LOADING (Ağaçların yüklenirken sistemi dondurmasını engeller)
+        var markers = L.markerClusterGroup({ 
+            showCoverageOnHover: false, 
+            maxClusterRadius: 35, 
+            disableClusteringAtZoom: 40,
+            chunkedLoading: true 
+        });
 
         fetch('veri.geojson').then(response => response.json()).then(data => {
             globalAnaKatman = L.geoJSON(data, { coordsToLatLng: function (coords) { var transformed = proj4("EPSG:5254", "EPSG:4326", [coords[0], coords[1]]); return new L.LatLng(transformed[1], transformed[0]); }, style: { color: "darkgray", weight: 1, opacity: 0.6, fillColor: "gray", fillOpacity: 0.1 } }).addTo(map);
@@ -293,6 +311,7 @@
         }
         function closeChart() { document.getElementById('iosModal').classList.remove('show'); setTimeout(() => { document.getElementById('iosModal').style.display = 'none'; }, 400); }
         
+        // --- 15 SANİYE İŞLEM YAPILMAZSA SIFIRLAMA ---
         var idleTimer; 
         function resetInteraction() { 
             clearHighlight(); 
@@ -311,6 +330,7 @@
         
         handleInteraction();
 
+        // --- 60 SANİYEDE BİR HARİTA TURU ---
         setInterval(() => {
             if (aktifVurgularKatmani.getLayers().length === 0 && globalAnaKatman) {
                 map.flyToBounds(globalAnaKatman.getBounds(), { padding: [50, 50], duration: 3.5 });
