@@ -141,9 +141,20 @@
                     }
                     map.addLayer(markers);
 
-                    // --- TREND (OK) MANTIĞI ---
+                    // --- TREND (OK) VE SÜTUNA ÖZEL BİRİM MANTIĞI ---
                     var panelSutunlari = [10, 11, 12, 13, 14, 15]; // Mevcut veriler (K, L, M, N, O, P)
                     var eskiVeriSutunlari = [16, 17, 18, 19, 20, 21]; // Önceki dönem verileri (Q, R, S, T, U, V)
+                    
+                    // HANGİ SÜTUNA HANGİ BİRİM YAZILACAK? (Buradan kolayca değiştirebilirsiniz)
+                    var birimler = {
+                        10: "ton",   // K Sütunu (10. İndeks): Mevcut CO2 Stoku
+                        11: "ton",   // L Sütunu (11. İndeks): Yıllık CO2 Stok Artışı
+                        12: "ton",   // M Sütunu (12. İndeks): Yıllık O2 Üretimi
+                        13: "TL",    // N Sütunu (13. İndeks): Piyasa Değeri
+                        14: "",      // O Sütunu (14. İndeks): Hava Kalitesi (Birim boş bırakıldı)
+                        15: "adet"   // P Sütunu (15. İndeks): Ağaç Sayısı
+                    };
+
                     var sonGuncelVeri = null;
                     
                     for (var j = veriler.length - 1; j >= 1; j--) {
@@ -160,23 +171,25 @@
                             var mevcutDegerText = sonGuncelVeri[index] ? sonGuncelVeri[index].toString().trim() : "0";
                             var baslikAdi = basliklar[index] ? basliklar[index] : `-`;
                             
+                            // Sözlükten o sütuna ait birimi çekiyoruz. Eğer birim tanımlıysa HTML'e ekliyoruz.
+                            var birimMetni = birimler[index] ? `<span style='font-size:10px; color:#888; margin-left:3px;'>${birimler[index]}</span>` : "";
+
                             var eskiSutunIndex = eskiVeriSutunlari[i]; // Eşleşen eski veriyi al
                             var eskiDegerText = sonGuncelVeri[eskiSutunIndex] ? sonGuncelVeri[eskiSutunIndex].toString().trim() : null;
 
                             var trendIcon = ""; // Ok simgesi değişkeni
                             
-                            // Eğer eski veri varsa, sayıya çevirip karşılaştır
                             if (eskiDegerText !== null && eskiDegerText !== "") {
                                 var mevcutSayi = parseFloat(mevcutDegerText.replace(',', '.'));
                                 var eskiSayi = parseFloat(eskiDegerText.replace(',', '.'));
                                 
                                 if (!isNaN(mevcutSayi) && !isNaN(eskiSayi)) {
                                     if (mevcutSayi > eskiSayi) {
-                                        trendIcon = "<span class='trend-up'>▲</span>"; // Artış
+                                        trendIcon = "<span class='trend-up' style='margin-left:5px;'>▲</span>"; 
                                     } else if (mevcutSayi < eskiSayi) {
-                                        trendIcon = "<span class='trend-down'>▼</span>"; // Azalış
+                                        trendIcon = "<span class='trend-down' style='margin-left:5px;'>▼</span>"; 
                                     } else {
-                                        trendIcon = "<span class='trend-flat'>▬</span>"; // Sabit
+                                        trendIcon = "<span class='trend-flat' style='margin-left:5px;'>▬</span>"; 
                                     }
                                 }
                             }
@@ -185,8 +198,7 @@
                             <div class="veri-kutusu">
                                 <div class="veri-baslik">${baslikAdi}</div>
                                 <div class="veri-deger-container">
-                                    <span class="veri-deger">${mevcutDegerText}</span>
-                                    ${trendIcon}
+                                    <span class="veri-deger">${mevcutDegerText}</span>${birimMetni}${trendIcon}
                                 </div>
                             </div>`;
                         });
