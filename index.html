@@ -90,7 +90,7 @@
         var map = L.map('map', { zoomControl: false, attributionControl: false, minZoom: 12, maxZoom: 25, zoomSnap: 0.1, zoomDelta: 0.1 });
         var globalAnaKatman; 
         
-        var markers = L.markerClusterGroup({ showCoverageOnHover: false, maxClusterRadius: 35, disableClusteringAtZoom: 20 });
+        var markers = L.markerClusterGroup({ showCoverageOnHover: false, maxClusterRadius: 35, disableClusteringAtZoom: 40 });
 
         fetch('veri.geojson')
             .then(response => response.json())
