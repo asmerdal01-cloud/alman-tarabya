@@ -47,6 +47,15 @@
         .trend-down { color: #e74c3c; font-size: 14px; }
         .trend-flat { color: #95a5a6; font-size: 14px; }
 
+        /* YENİ: TAM GENİŞLİK TOPLAM FAYDA KUTUSU İÇİN ÖZEL TASARIM */
+        .veri-kutusu.tam-genislik { 
+            grid-column: span 2; /* İki kutu yer kaplar */
+            background: linear-gradient(135deg, rgba(46, 204, 113, 0.15) 0%, rgba(46, 204, 113, 0.02) 100%);
+            border: 1px solid rgba(46, 204, 113, 0.3);
+        }
+        .veri-kutusu.tam-genislik .veri-baslik { color: #2ecc71; font-weight: bold; letter-spacing: 1px; }
+        .veri-kutusu.tam-genislik .veri-deger { font-size: 22px; }
+
         #iosModal { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.4); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 9999; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s ease; }
         #iosModal.show { opacity: 1; }
         #iosModalContent { width: 90%; max-width: 700px; height: 450px; background: rgba(30, 30, 30, 0.85); border-radius: 24px; border: 1px solid rgba(255,255,255,0.15); padding: 25px; box-shadow: 0 25px 50px rgba(0,0,0,0.5); transform: scale(0); opacity: 0; transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.2), opacity 0.4s ease; position: relative; display: flex; flex-direction: column; }
@@ -126,9 +135,9 @@
         var transformedKiosk = proj4("EPSG:5254", "EPSG:4326", rawKioskCoords);
         var kioskLatLng = L.latLng(transformedKiosk[1], transformedKiosk[0]);
         
-        // AĞAÇ ANİMASYONLARI (PULSE) VE SINIRSIZ KAYDIRMA İÇİN GELİŞMİŞ SVG MOTORU
+        // AĞAÇ ANİMASYONLARI VE SINIRSIZ KAYDIRMA İÇİN GELİŞMİŞ SVG MOTORU
         var map = L.map('map', { 
-            renderer: L.svg({ padding: 3.0 }), // Hem nefes alma efektini çalıştırır hem de kesilmeyi/gri boşlukları önler!
+            renderer: L.svg({ padding: 3.0 }), // Asla gri boşluk yapmaz, sonradan yüklenmez!
             zoomControl: false, 
             attributionControl: false, 
             minZoom: 12, 
@@ -163,7 +172,6 @@
         var glowLayers = [];
         var animasyonZamanlayici = null;
 
-        // JS Animasyonu (Kusursuz Neon Parlaması, Asla Titremez)
         function baslatJSAnimasyon() {
             var pulseOpacity = 0.2;
             var pulseDir = 0.04;
@@ -225,7 +233,6 @@
             document.getElementById('searchResults').innerHTML = "";
             document.getElementById('clearRouteBtn').style.display = 'none';
             
-            // SARSINTI KİLİDİ 1: Eğer harita zaten Kiosk noktasındaysa, yerinden kıpırdatma!
             var dist = map.distance(map.getCenter(), kioskLatLng);
             if (map.getZoom() !== 19 || dist > 1.0) {
                 map.flyTo(kioskLatLng, 19, { duration: 2 });
@@ -276,6 +283,27 @@
                             var trendIcon = !isNaN(mevcutSayi) && !isNaN(eskiSayi) ? (mevcutSayi > eskiSayi ? "<span class='trend-up' style='margin-left:5px;'>▲</span>" : (mevcutSayi < eskiSayi ? "<span class='trend-down' style='margin-left:5px;'>▼</span>" : "<span class='trend-flat' style='margin-left:5px;'>▬</span>")) : "";
                             html += `<div class="veri-kutusu" onclick="openChart(event, this)" data-baslik="${baslikAdi}" data-mevcut="${mevcutSayi}" data-eski="${eskiSayi}" data-birim="${birimler[index]}" data-ibreli="${ibreliSayisi}" data-yaprakli="${yaprakliSayisi}"><div class="veri-baslik">${baslikAdi}</div><div class="veri-deger-container"><span class="veri-deger">${sonGuncelVeri[index]||"0"}</span>${birimMetni}${trendIcon}</div></div>`;
                         });
+
+                        // YENİ EKLENEN RASTGELE KUTULAR (Grafikleri Çalışacak Şekilde Ayarlandı)
+                        
+                        // 1. Enerji Tasarrufu
+                        html += `<div class="veri-kutusu" onclick="openChart(event, this)" data-baslik="Yıllık Enerji Tasarrufu" data-mevcut="14500" data-eski="13200" data-birim="kWh">
+                                    <div class="veri-baslik">Enerji Tasarrufu</div>
+                                    <div class="veri-deger-container"><span class="veri-deger">14.500</span><span style='font-size:10px; color:#888; margin-left:3px;'>kWh</span><span class='trend-up' style='margin-left:5px;'>▲</span></div>
+                                 </div>`;
+                        
+                        // 2. Önlenen Hava Kirliliği
+                        html += `<div class="veri-kutusu" onclick="openChart(event, this)" data-baslik="Önlenen Hava Kirliliği" data-mevcut="2.4" data-eski="1.9" data-birim="ton">
+                                    <div class="veri-baslik">Önlenen H. Kirliliği</div>
+                                    <div class="veri-deger-container"><span class="veri-deger">2.4</span><span style='font-size:10px; color:#888; margin-left:3px;'>ton</span><span class='trend-up' style='margin-left:5px;'>▲</span></div>
+                                 </div>`;
+
+                        // 3. Toplam Fayda (TAM GENİŞLİK - span 2)
+                        html += `<div class="veri-kutusu tam-genislik" onclick="openChart(event, this)" data-baslik="Toplam Ekosistem Faydası" data-mevcut="145000" data-eski="110000" data-birim="TL">
+                                    <div class="veri-baslik">TOPLAM EKOSİSTEM FAYDASI</div>
+                                    <div class="veri-deger-container"><span class="veri-deger">145.000</span><span style='font-size:12px; color:#888; margin-left:3px;'>TL / Yıl</span><span class='trend-up' style='margin-left:5px; font-size:18px;'>▲</span></div>
+                                 </div>`;
+
                         html += '</div>';
                         document.getElementById('excel-verileri').innerHTML = html;
                     }
@@ -283,6 +311,7 @@
             }
         });
 
+        // GRAFİKLERİN RENKLERİ "SENTREE YEŞİLİ" OLARAK DÜZELTİLDİ
         var currentChart = null;
         function openChart(event, element) {
             var baslik = element.getAttribute('data-baslik'); var mevcut = parseFloat(element.getAttribute('data-mevcut')); var eski = parseFloat(element.getAttribute('data-eski')); var birim = element.getAttribute('data-birim'); var ibreli = parseInt(element.getAttribute('data-ibreli')) || 0; var yaprakli = parseInt(element.getAttribute('data-yaprakli')) || 0;
@@ -296,14 +325,13 @@
             var ctx = document.getElementById('chartCanvas').getContext('2d'); var isTreeCount = baslik.toLocaleLowerCase('tr-TR').includes("ağaç");
             
             if (isTreeCount && (ibreli > 0 || yaprakli > 0)) {
-                // AĞAÇ TÜRLERİ İÇİN OLAN RENKLER (Yeşil, Turuncu, Mor)
                 var chartLabels = isNaN(eski) ? ['Mevcut Dönem'] : ['Önceki Dönem', 'Mevcut Dönem']; var diger = mevcut - (ibreli + yaprakli); if (diger < 0) diger = 0;
                 var datasets = [];
                 if (!isNaN(eski)) { datasets.push({ label: 'Geçmiş Toplam', data: [eski, 0], backgroundColor: '#95a5a6', borderRadius: 4 }); datasets.push({ label: 'İbreli', data: [0, ibreli], backgroundColor: '#27ae60', borderRadius: 4 }); datasets.push({ label: 'Yapraklı', data: [0, yaprakli], backgroundColor: '#f39c12', borderRadius: 4 }); if(diger > 0) datasets.push({ label: 'Diğer', data: [0, diger], backgroundColor: '#8e44ad', borderRadius: 4 });
                 } else { datasets.push({ label: 'İbreli', data: [ibreli], backgroundColor: '#27ae60', borderRadius: 4 }); datasets.push({ label: 'Yapraklı', data: [yaprakli], backgroundColor: '#f39c12', borderRadius: 4 }); if(diger > 0) datasets.push({ label: 'Diğer', data: [diger], backgroundColor: '#8e44ad', borderRadius: 4 }); }
                 currentChart = new Chart(ctx, { type: 'bar', data: { labels: chartLabels, datasets: datasets }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, labels: {color: '#eee'} } }, scales: { x: { stacked: true, ticks: { color: '#eee', font: {size: 13, weight: 'bold'} }, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { color: '#bbb' }, grid: { color: 'rgba(255,255,255,0.05)' } } } } });
             } else {
-                // DİĞER STANDART VERİLER İÇİN OLAN RENKLER (Kırmızı iptal, Sentree Yeşili eklendi)
+                // KIRMIZI YERİNE SENTREE YEŞİLİ KULLANILDI (#2ecc71)
                 var chartLabels = isNaN(eski) ? ['Mevcut Dönem'] : ['Önceki Dönem', 'Mevcut Dönem']; var chartData = isNaN(eski) ? [mevcut] : [eski, mevcut]; 
                 var chartColors = isNaN(eski) ? ['#2ecc71'] : ['#95a5a6', '#2ecc71']; 
                 currentChart = new Chart(ctx, { type: 'bar', data: { labels: chartLabels, datasets: [{ label: birim ? `Birim: ${birim}` : 'Değer', data: chartData, backgroundColor: chartColors, borderRadius: 8, barPercentage: 0.5 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { color: '#bbb', font: {size: 11} }, grid: { color: 'rgba(255,255,255,0.05)' } }, x: { ticks: { color: '#eee', font: {size: 13, weight: 'bold'} }, grid: { display: false } } } } });
@@ -311,10 +339,8 @@
         }
         function closeChart() { document.getElementById('iosModal').classList.remove('show'); setTimeout(() => { document.getElementById('iosModal').style.display = 'none'; }, 400); }
         
-        // --- 15 SANİYE KURALI (SARSINTI KİLİDİ 2) ---
         var idleTimer; 
         function resetInteraction() { 
-            // Eğer bir vurgu yoksa veya harita zaten merkezdeyse hiçbir işlem yapma
             var dist = map.distance(map.getCenter(), kioskLatLng);
             if (aktifVurgularKatmani.getLayers().length > 0 || map.getZoom() !== 19 || dist > 1.0) {
                 clearHighlight(); 
