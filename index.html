@@ -52,14 +52,14 @@
 
         /* YILAN ROTA ANİMASYONU */
         .animated-route-line {
-            stroke-dasharray: 4000;
-            stroke-dashoffset: 4000;
-            animation: drawRoute 2.5s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+            stroke-dasharray: 10000;
+            stroke-dashoffset: 10000;
+            animation: drawRoute 2s ease-out forwards;
             filter: drop-shadow(0px 0px 8px rgba(46, 204, 113, 0.8));
         }
         @keyframes drawRoute { to { stroke-dashoffset: 0; } }
 
-        /* Diğer Harita Stilleri */
+        /* iOS KLASÖR MODALI */
         #iosModal { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.4); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 9999; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s ease; }
         #iosModal.show { opacity: 1; }
         #iosModalContent { width: 90%; max-width: 700px; height: 450px; background: rgba(30, 30, 30, 0.85); border-radius: 24px; border: 1px solid rgba(255,255,255,0.15); padding: 25px; box-shadow: 0 25px 50px rgba(0,0,0,0.5); transform: scale(0); opacity: 0; transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.2), opacity 0.4s ease; position: relative; display: flex; flex-direction: column; }
@@ -109,6 +109,7 @@
         </div>
     </div>
 
+    <!-- DİJİTAL SAAT -->
     <div class="top-clock-container">
         <div class="time-text" id="liveTime">--:--:--</div>
         <div class="date-text" id="liveDate">SİSTEM BAĞLANTISI...</div>
@@ -139,53 +140,44 @@
 
         proj4.defs("EPSG:5254", "+proj=tmerc +lat_0=0 +lon_0=30 +k=1 +x_0=500000 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs");
 
-        // --- EPSG:5254 FORMATINDAKİ KOORDİNATLARINIZ BURADA ---
-        // Sadece X(Doğu) ve Y(Kuzey) yazmanız yeterli, sistem kendi çevirir!
-        
+        // --- VERDİĞİNİZ KİOSK VE POI KOORDİNATLARI ---
         var rawKioskCoords = [421029.4472, 4556083.3033]; // Kiosk: X, Y
         var transformedKiosk = proj4("EPSG:5254", "EPSG:4326", rawKioskCoords);
         var kioskLatLng = L.latLng(transformedKiosk[1], transformedKiosk[0]);
         
         var map = L.map('map', { zoomControl: false, attributionControl: false, minZoom: 12, maxZoom: 25, zoomSnap: 0.1, zoomDelta: 0.1 }).setView(kioskLatLng, 18);
         
-        // Kiosk Simgesi (Ekrandaki Buradasınız Noktası)
         var kioskIcon = L.divIcon({ html: '<div style="background-color:#e74c3c; width:16px; height:16px; border-radius:50%; border:3px solid white; box-shadow:0 0 10px rgba(0,0,0,0.5);"></div>', className: '', iconSize: [22, 22], iconAnchor: [11, 11] });
         L.marker(kioskLatLng, {icon: kioskIcon}).addTo(map).bindPopup("<b style='color:#e74c3c'>Şu An Buradasınız</b>").openPopup();
 
-        // --- GİZLİ AĞ (GRAPH) VE ROTA MANTIĞI ---
         var agDugumleri = {}; 
         var cizilenRotaCizgisi = null; 
         var hedefSimgesi = null;
 
-        // VERDİĞİNİZ BİNA KOORDİNATLARI (NetCAD X ve Y değerleri)
         var rawPoiListesi = [
             { ad: "lokanta", x: 420962.2129, y: 4556130.5068 },
             { ad: "tuvalet", x: 421041.2371, y: 4555967.8822 },
             { ad: "danışma", x: 420952.2674, y: 4556029.0993 }
         ];
 
-        // POI listesini otomatik olarak WGS84'e çevirir
         var poiListesi = rawPoiListesi.map(poi => {
             var trans = proj4("EPSG:5254", "EPSG:4326", [poi.x, poi.y]);
             return { ad: poi.ad, lat: trans[1], lng: trans[0] };
         });
 
-        // 1. yollar.geojson dosyasını okuyup gizli ağ kuruyoruz
+        // GeoJSON ağ okuyucusu
         fetch('yollar.geojson')
             .then(response => response.json())
             .then(data => {
                 data.features.forEach(feature => {
                     if (feature.geometry.type === "LineString" || feature.geometry.type === "MultiLineString") {
                         var coords = feature.geometry.type === "LineString" ? [feature.geometry.coordinates] : feature.geometry.coordinates;
-                        
                         coords.forEach(line => {
                             for (var i = 0; i < line.length - 1; i++) {
                                 var p1 = proj4("EPSG:5254", "EPSG:4326", [line[i][0], line[i][1]]);
                                 var p2 = proj4("EPSG:5254", "EPSG:4326", [line[i+1][0], line[i+1][1]]);
-                                
                                 var n1 = `${p1[1].toFixed(6)},${p1[0].toFixed(6)}`;
                                 var n2 = `${p2[1].toFixed(6)},${p2[0].toFixed(6)}`;
-                                
                                 var dist = map.distance(L.latLng(p1[1], p1[0]), L.latLng(p2[1], p2[0]));
 
                                 if (!agDugumleri[n1]) agDugumleri[n1] = [];
@@ -198,15 +190,13 @@
                     }
                 });
                 console.log("Gizli Ağ Kuruldu! Düğüm Sayısı:", Object.keys(agDugumleri).length);
-            }).catch(err => console.log("yollar.geojson henüz yok. Bulunana kadar haritada direkt lazer çizgi kullanılacak."));
+            }).catch(err => console.log("yollar.geojson henüz yok."));
 
         function enYakinDugumBul(latlng) {
-            var minMesafe = Infinity;
-            var enYakin = null;
+            var minMesafe = Infinity; var enYakin = null;
             for (var dugum in agDugumleri) {
                 var coords = dugum.split(',');
-                var dLatLng = L.latLng(parseFloat(coords[0]), parseFloat(coords[1]));
-                var dist = map.distance(latlng, dLatLng);
+                var dist = map.distance(latlng, L.latLng(parseFloat(coords[0]), parseFloat(coords[1])));
                 if (dist < minMesafe) { minMesafe = dist; enYakin = dugum; }
             }
             return enYakin;
@@ -214,7 +204,6 @@
 
         function dijkstra(baslangicDugumu, bitisDugumu) {
             var mesafeler = {}; var onceki = {}; var islenecekler = [];
-
             for (var dugum in agDugumleri) { mesafeler[dugum] = Infinity; onceki[dugum] = null; }
             mesafeler[baslangicDugumu] = 0; islenecekler.push({ dugum: baslangicDugumu, mesafe: 0 });
 
@@ -236,7 +225,6 @@
 
             var yol = []; var u = bitisDugumu;
             if (mesafeler[u] === Infinity) return null; 
-            
             while (u) { var coords = u.split(','); yol.unshift([parseFloat(coords[0]), parseFloat(coords[1])]); u = onceki[u]; }
             return yol;
         }
@@ -252,36 +240,42 @@
             var foundPOI = poiListesi.find(poi => poi.ad.includes(searchTerm));
 
             if (foundPOI) {
-                resultsDiv.innerHTML = `<span style="color:#2ecc71">Hedef bulundu: <b>${foundPOI.ad.toUpperCase()}</b>. Rota hesaplanıyor...</span>`;
-                clearRouteVisuals();
+                // UI'ı anında güncelle ve tarayıcıya nefes aldırıp işlemi başlat (Takılmayı çözen Kısım)
+                resultsDiv.innerHTML = `<span style="color:#2ecc71">Hedef bulundu: <b>${foundPOI.ad.toUpperCase()}</b>. Rota çiziliyor... ⏳</span>`;
+                
+                setTimeout(() => {
+                    clearRouteVisuals();
 
-                var hedefLatLng = L.latLng(foundPOI.lat, foundPOI.lng);
-                var yolKordinatlari = [];
+                    var hedefLatLng = L.latLng(foundPOI.lat, foundPOI.lng);
+                    var yolKordinatlari = [];
 
-                if (Object.keys(agDugumleri).length > 0) {
-                    var baslangicDugumu = enYakinDugumBul(kioskLatLng);
-                    var bitisDugumu = enYakinDugumBul(hedefLatLng);
-                    
-                    var hesaplananYol = dijkstra(baslangicDugumu, bitisDugumu);
-                    if (hesaplananYol && hesaplananYol.length > 0) { yolKordinatlari = hesaplananYol; }
-                }
+                    if (Object.keys(agDugumleri).length > 0) {
+                        var baslangicDugumu = enYakinDugumBul(kioskLatLng);
+                        var bitisDugumu = enYakinDugumBul(hedefLatLng);
+                        
+                        var hesaplananYol = dijkstra(baslangicDugumu, bitisDugumu);
+                        if (hesaplananYol && hesaplananYol.length > 0) { yolKordinatlari = hesaplananYol; }
+                    }
 
-                // Yol bulunamazsa direkt çizgi
-                if (yolKordinatlari.length === 0) {
-                    yolKordinatlari = [[kioskLatLng.lat, kioskLatLng.lng], [hedefLatLng.lat, hedefLatLng.lng]];
-                }
+                    if (yolKordinatlari.length === 0) {
+                        yolKordinatlari = [[kioskLatLng.lat, kioskLatLng.lng], [hedefLatLng.lat, hedefLatLng.lng]];
+                    }
 
-                // HARİTAYA ANİMASYONLU ÇİZGİYİ EKLEME
-                cizilenRotaCizgisi = L.polyline(yolKordinatlari, {
-                    color: '#2ecc71', weight: 6, opacity: 0.9, lineJoin: 'round', className: 'animated-route-line' 
-                }).addTo(map);
+                    cizilenRotaCizgisi = L.polyline(yolKordinatlari, {
+                        color: '#2ecc71', weight: 6, opacity: 0.9, lineJoin: 'round', className: 'animated-route-line' 
+                    }).addTo(map);
 
-                hedefSimgesi = L.marker(hedefLatLng, {
-                    icon: L.divIcon({ html: '🎯', className: '', iconSize: [24,24], iconAnchor:[12,12]})
-                }).addTo(map).bindPopup("<b>" + foundPOI.ad.toUpperCase() + "</b>").openPopup();
+                    hedefSimgesi = L.marker(hedefLatLng, {
+                        icon: L.divIcon({ html: '🎯', className: '', iconSize: [24,24], iconAnchor:[12,12]})
+                    }).addTo(map).bindPopup("<b>" + foundPOI.ad.toUpperCase() + "</b>").openPopup();
 
-                map.fitBounds(cizilenRotaCizgisi.getBounds(), { padding: [50, 50] });
-                document.getElementById('clearRouteBtn').style.display = 'block';
+                    map.fitBounds(cizilenRotaCizgisi.getBounds(), { padding: [50, 50] });
+                    document.getElementById('clearRouteBtn').style.display = 'block';
+
+                    // İşlem bittikten sonra yazıyı güncelle
+                    resultsDiv.innerHTML = `<span style="color:#2ecc71">Hedef bulundu: <b>${foundPOI.ad.toUpperCase()}</b>. Rota Çizildi! ✔️</span>`;
+                }, 100);
+
             } else {
                 resultsDiv.innerHTML = `<span style="color:#e74c3c">Konum bulunamadı.</span>`;
             }
@@ -353,11 +347,77 @@
             }
         });
 
-        // GRAFİK MANTIĞI
+        // --- TAMAMI GERİ YÜKLENMİŞ GRAFİK MANTIĞI ---
         var currentChart = null;
-        function openChart(event, element) { /* ...aynı... */ }
-        function closeChart() { document.getElementById('iosModal').classList.remove('show'); setTimeout(() => { document.getElementById('iosModal').style.display = 'none'; }, 400); }
-        
+        function openChart(event, element) {
+            var baslik = element.getAttribute('data-baslik');
+            var mevcut = parseFloat(element.getAttribute('data-mevcut'));
+            var eski = parseFloat(element.getAttribute('data-eski'));
+            var birim = element.getAttribute('data-birim');
+            var ibreli = parseInt(element.getAttribute('data-ibreli')) || 0;
+            var yaprakli = parseInt(element.getAttribute('data-yaprakli')) || 0;
+            if (birim === "undefined") birim = "";
+
+            var rect = element.getBoundingClientRect();
+            var originX = rect.left + (rect.width / 2);
+            var originY = rect.top + (rect.height / 2);
+
+            var modal = document.getElementById('iosModal');
+            var modalContent = document.getElementById('iosModalContent');
+            
+            document.getElementById('modalBaslik').innerText = baslik + " Karşılaştırması";
+            modal.style.display = 'flex';
+            modalContent.style.transformOrigin = `${originX}px ${originY}px`;
+
+            setTimeout(() => { modal.classList.add('show'); }, 10);
+            if(currentChart) currentChart.destroy();
+
+            var ctx = document.getElementById('chartCanvas').getContext('2d');
+            var baslikKucuk = baslik.toLocaleLowerCase('tr-TR');
+            var isTreeCount = baslikKucuk.includes("ağaç") || baslikKucuk.includes("agac");
+
+            if (isTreeCount && (ibreli > 0 || yaprakli > 0)) {
+                var chartLabels = isNaN(eski) ? ['Mevcut Dönem'] : ['Önceki Dönem', 'Mevcut Dönem'];
+                var diger = mevcut - (ibreli + yaprakli);
+                if (diger < 0) diger = 0;
+
+                var datasets = [];
+                if (!isNaN(eski)) {
+                    datasets.push({ label: 'Geçmiş Toplam', data: [eski, 0], backgroundColor: '#95a5a6', borderRadius: 4 });
+                    datasets.push({ label: 'İbreli', data: [0, ibreli], backgroundColor: '#27ae60', borderRadius: 4 });
+                    datasets.push({ label: 'Yapraklı', data: [0, yaprakli], backgroundColor: '#f39c12', borderRadius: 4 });
+                    if(diger > 0) datasets.push({ label: 'Diğer', data: [0, diger], backgroundColor: '#8e44ad', borderRadius: 4 });
+                } else {
+                    datasets.push({ label: 'İbreli', data: [ibreli], backgroundColor: '#27ae60', borderRadius: 4 });
+                    datasets.push({ label: 'Yapraklı', data: [yaprakli], backgroundColor: '#f39c12', borderRadius: 4 });
+                    if(diger > 0) datasets.push({ label: 'Diğer', data: [diger], backgroundColor: '#8e44ad', borderRadius: 4 });
+                }
+
+                currentChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: { labels: chartLabels, datasets: datasets },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, labels: {color: '#eee'} } }, scales: { x: { stacked: true, ticks: { color: '#eee', font: {size: 13, weight: 'bold'} }, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { color: '#bbb' }, grid: { color: 'rgba(255,255,255,0.05)' } } } }
+                });
+
+            } else {
+                var chartLabels = isNaN(eski) ? ['Mevcut Dönem'] : ['Önceki Dönem', 'Mevcut Dönem'];
+                var chartData = isNaN(eski) ? [mevcut] : [eski, mevcut];
+                var chartColors = isNaN(eski) ? ['#2ecc71'] : ['#95a5a6', '#2ecc71']; 
+
+                currentChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: { labels: chartLabels, datasets: [{ label: birim ? `Birim: ${birim}` : 'Değer', data: chartData, backgroundColor: chartColors, borderRadius: 8, barPercentage: 0.5 }] },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { color: '#bbb', font: {size: 11} }, grid: { color: 'rgba(255,255,255,0.05)' } }, x: { ticks: { color: '#eee', font: {size: 13, weight: 'bold'} }, grid: { display: false } } } }
+                });
+            }
+        }
+
+        function closeChart() {
+            var modal = document.getElementById('iosModal');
+            modal.classList.remove('show');
+            setTimeout(() => { modal.style.display = 'none'; }, 400); 
+        }
+
         var idleTimer; function resetView() { if(globalAnaKatman) { map.closePopup(); map.fitBounds(globalAnaKatman.getBounds()); } }
         function handleInteraction() { clearTimeout(idleTimer); idleTimer = setTimeout(resetView, 15000); }
         document.addEventListener('touchstart', handleInteraction, {passive: true}); document.addEventListener('mousedown', handleInteraction); map.on('zoomstart', handleInteraction); map.on('dragstart', handleInteraction);
