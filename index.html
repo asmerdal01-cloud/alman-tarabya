@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SENTREE - KİOSK NİHAİ SÜRÜM</title>
+    <title>SENTREE - AKILLI KİOSK ARAYÜZÜ</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
@@ -47,15 +47,20 @@
         .trend-down { color: #e74c3c; font-size: 14px; }
         .trend-flat { color: #95a5a6; font-size: 14px; }
 
-        /* VURGU ANİMASYONU (Sarsıntı Kökünden Çözüldü: GPU Hızlandırmalı Opacity) */
+        /* SARSINTI ÖNLEYİCİ KİLİT (Leaflet'in titremesini donanımsal olarak durdurur) */
+        .leaflet-overlay-pane svg {
+            will-change: transform;
+        }
+
+        /* GERİ DÖNEN ESKİ NEON ANİMASYONU */
         .highlight-building {
             pointer-events: none;
+            filter: drop-shadow(0 0 12px rgba(231, 76, 60, 0.9)); /* O şık neon gölge geri geldi */
             animation: safe-pulse 1s infinite alternate ease-in-out;
-            transform: translateZ(0); /* GPU Hızlandırmasını Devreye Sokar */
         }
         @keyframes safe-pulse {
-            from { fill-opacity: 0.2; stroke-opacity: 0.3; }
-            to { fill-opacity: 0.9; stroke-opacity: 1.0; }
+            from { opacity: 0.3; }
+            to { opacity: 1.0; }
         }
 
         #iosModal { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.4); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 9999; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s ease; }
@@ -123,7 +128,6 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
-        // Saat Mantığı
         setInterval(() => {
             const now = new Date();
             const days = ["PAZAR", "PAZARTESİ", "SALI", "ÇARŞAMBA", "PERŞEMBE", "CUMA", "CUMARTESİ"];
@@ -138,9 +142,8 @@
         var transformedKiosk = proj4("EPSG:5254", "EPSG:4326", rawKioskCoords);
         var kioskLatLng = L.latLng(transformedKiosk[1], transformedKiosk[0]);
         
-        // 1. OPTİMİZASYON: PREFERCANVAS (Kasma ve donmaları bitiren GPU render motoru)
+        // Canvas kapatıldı, orjinal SVG motoruna dönüldü (Binaların CSS efektleri çalışsın diye)
         var map = L.map('map', { 
-            preferCanvas: true, 
             zoomControl: false, 
             attributionControl: false, 
             minZoom: 12, 
@@ -149,6 +152,7 @@
             zoomDelta: 0.1 
         }).setView(kioskLatLng, 18);
         
+        // Kiosk yazısı silindi, sadece Şu An Buradasınız
         var kioskIcon = L.divIcon({ html: '<div style="background-color:#3498db; width:16px; height:16px; border-radius:50%; border:3px solid white; box-shadow:0 0 10px rgba(0,0,0,0.5);"></div>', className: '', iconSize: [22, 22], iconAnchor: [11, 11] });
         L.marker(kioskLatLng, {icon: kioskIcon}).addTo(map).bindPopup("<b style='color:#3498db'>Şu An Buradasınız</b>").openPopup();
 
@@ -196,20 +200,21 @@
             var foundPOIs = poiListesi.filter(poi => poi.ad.includes(searchTerm));
 
             if (foundPOIs.length > 0) {
-                resultsDiv.innerHTML = ""; 
+                resultsDiv.innerHTML = ""; // Hedef bulundu bildirimini silme
                 aktifVurgularKatmani.clearLayers();
 
                 foundPOIs.forEach(poi => {
                     var vurgu;
                     if (poi.tip === "polygon") {
                         vurgu = L.polygon(poi.latLngs, {
-                            color: '#e74c3c', fillColor: '#e74c3c', weight: 3, className: 'highlight-building' 
+                            color: '#e74c3c', fillColor: '#e74c3c', weight: 2, className: 'highlight-building' 
                         });
                     } else {
                         vurgu = L.circleMarker([poi.lat, poi.lng], {
-                            radius: 12, color: '#e74c3c', fillColor: '#e74c3c', weight: 3, className: 'highlight-building'
+                            radius: 12, color: '#e74c3c', fillColor: '#e74c3c', weight: 2, className: 'highlight-building'
                         });
                     }
+                    // Pop-up iptal, sadece şekil eklenecek
                     aktifVurgularKatmani.addLayer(vurgu);
                 });
 
@@ -217,7 +222,7 @@
                 document.getElementById('clearRouteBtn').style.display = 'block';
 
             } else {
-                resultsDiv.innerHTML = `<span style="color:#aaa">Konum bulunamadı.</span>`;
+                resultsDiv.innerHTML = `<span style="color:#aaa">Konum bulunamadı.</span>`; // Sadece bulunamazsa uyarı var
             }
         }
 
@@ -230,13 +235,11 @@
         }
 
         var globalAnaKatman; 
-        
-        // 2. OPTİMİZASYON: CHUNKED LOADING (Ağaçların yüklenirken sistemi dondurmasını engeller)
         var markers = L.markerClusterGroup({ 
             showCoverageOnHover: false, 
             maxClusterRadius: 35, 
             disableClusteringAtZoom: 40,
-            chunkedLoading: true 
+            chunkedLoading: true // Ağaçların sistemi dondurmasını engellemek için bu ayar korundu
         });
 
         fetch('veri.geojson').then(response => response.json()).then(data => {
@@ -311,7 +314,7 @@
         }
         function closeChart() { document.getElementById('iosModal').classList.remove('show'); setTimeout(() => { document.getElementById('iosModal').style.display = 'none'; }, 400); }
         
-        // --- 15 SANİYE İŞLEM YAPILMAZSA SIFIRLAMA ---
+        // --- 15 SANİYE KURALI (EKRAN BOŞTA KALIRSA SIFIRLAR) ---
         var idleTimer; 
         function resetInteraction() { 
             clearHighlight(); 
@@ -330,7 +333,7 @@
         
         handleInteraction();
 
-        // --- 60 SANİYEDE BİR HARİTA TURU ---
+        // --- 60 SANİYEDE BİR DRON KAMERASIYLA EKRAN KORUYUCU ŞOVU ---
         setInterval(() => {
             if (aktifVurgularKatmani.getLayers().length === 0 && globalAnaKatman) {
                 map.flyToBounds(globalAnaKatman.getBounds(), { padding: [50, 50], duration: 3.5 });
