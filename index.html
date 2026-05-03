@@ -47,16 +47,14 @@
         .trend-down { color: #e74c3c; font-size: 14px; }
         .trend-flat { color: #95a5a6; font-size: 14px; }
 
-        /* VURGU ANİMASYONU */
+        /* KESİN ÇÖZÜM: SARSINTISIZ SAF SVG ANİMASYONU (Gölge/Filter Kaldırıldı) */
         .highlight-building {
-            filter: drop-shadow(0 0 15px rgba(231, 76, 60, 1)); 
-            animation: pulse-opacity 1s infinite alternate ease-in-out;
             pointer-events: none;
-            transform: translateZ(0); 
+            animation: safe-pulse 1s infinite alternate ease-in-out;
         }
-        @keyframes pulse-opacity {
-            0% { opacity: 0.3; }
-            100% { opacity: 1; }
+        @keyframes safe-pulse {
+            from { fill-opacity: 0.2; stroke-opacity: 0.3; }
+            to { fill-opacity: 0.9; stroke-opacity: 1.0; }
         }
 
         #iosModal { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.4); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 9999; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s ease; }
@@ -89,9 +87,9 @@
 
     <div class="sidebar">
         <div class="sidebar-header">
-            <div class="sidebar-title">Project SenTree</div>
+            <div class="sidebar-title">PROJECT SENTREE</div>
             <div class="sidebar-location">📍ALMAN BÜYÜKELÇİLİĞİ - TARABYA</div>
-            <p class="sidebar-subtitle">GIS TABANLI KENTSEL EKOSİSTEM İZLEME VE DEĞERLEME SİSTEMİ</p>
+            <p class="sidebar-subtitle">GIS TABANLI KENTSEL EKOSİSTEM HİZMETLERİ TAKİP SİSTEMİ</p>
             
             <div class="search-container">
                 <input type="text" id="searchInput" class="search-input" placeholder="Lokanta, Tuvalet ara..." onkeypress="handleKeyPress(event)">
@@ -143,7 +141,6 @@
         var kioskIcon = L.divIcon({ html: '<div style="background-color:#3498db; width:16px; height:16px; border-radius:50%; border:3px solid white; box-shadow:0 0 10px rgba(0,0,0,0.5);"></div>', className: '', iconSize: [22, 22], iconAnchor: [11, 11] });
         L.marker(kioskLatLng, {icon: kioskIcon}).addTo(map).bindPopup("<b style='color:#3498db'>Şu An Buradasınız</b>").openPopup();
 
-        // Aktif vurguları grup olarak tutacak katman (Çoklu arama için)
         var aktifVurgularKatmani = L.featureGroup().addTo(map);
 
         var rawPoiListesi = [
@@ -158,7 +155,7 @@
                 ]
             },
             { ad: "lokanta", tip: "point", x: 420962.2129, y: 4556130.5068 },
-            { ad: "tuvalet", tip: "point", x: 420952.2674, y: 4556029.0993 } // Eskiden danışmaydı, tuvalet oldu.
+            { ad: "tuvalet", tip: "point", x: 420952.2674, y: 4556029.0993 }
         ];
 
         var poiListesi = rawPoiListesi.map(poi => {
@@ -185,14 +182,12 @@
                 return; 
             }
 
-            // 'find' yerine 'filter' kullanarak eşleşen TÜM sonuçları al
             var foundPOIs = poiListesi.filter(poi => poi.ad.includes(searchTerm));
 
             if (foundPOIs.length > 0) {
                 resultsDiv.innerHTML = ""; 
-                aktifVurgularKatmani.clearLayers(); // Eski aramaları temizle
+                aktifVurgularKatmani.clearLayers();
 
-                // Bulunan tüm sonuçları haritaya ekle
                 foundPOIs.forEach(poi => {
                     var vurgu;
                     if (poi.tip === "polygon") {
@@ -204,13 +199,10 @@
                             radius: 12, color: '#e74c3c', fillColor: '#e74c3c', weight: 3, className: 'highlight-building'
                         });
                     }
-                    // Pop-up bağlama kodları silindi, sadece sessizce yanıp sönecek
                     aktifVurgularKatmani.addLayer(vurgu);
                 });
 
-                // Kamerayı, bulunan tüm sonuçları ekrana sığdıracak şekilde ayarla
                 map.flyToBounds(aktifVurgularKatmani.getBounds(), { padding: [80, 80], maxZoom: 19.5, duration: 2.5 });
-
                 document.getElementById('clearRouteBtn').style.display = 'block';
 
             } else {
@@ -301,7 +293,6 @@
         }
         function closeChart() { document.getElementById('iosModal').classList.remove('show'); setTimeout(() => { document.getElementById('iosModal').style.display = 'none'; }, 400); }
         
-        // --- 15 SANİYE İŞLEM YAPILMAZSA SIFIRLAMA ---
         var idleTimer; 
         function resetInteraction() { 
             clearHighlight(); 
@@ -320,9 +311,7 @@
         
         handleInteraction();
 
-        // --- 60 SANİYEDE BİR HARİTA TURU ---
         setInterval(() => {
-            // Hiçbir arama vurgusu yoksa (aktifVurgularKatmani boşsa) tur yap
             if (aktifVurgularKatmani.getLayers().length === 0 && globalAnaKatman) {
                 map.flyToBounds(globalAnaKatman.getBounds(), { padding: [50, 50], duration: 3.5 });
                 setTimeout(() => {
