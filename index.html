@@ -47,16 +47,17 @@
         .trend-down { color: #e74c3c; font-size: 14px; }
         .trend-flat { color: #95a5a6; font-size: 14px; }
 
-        /* BİNA VURGU ANİMASYONU (Sarsıntı/Titreme Giderildi) */
+        /* VURGU ANİMASYONU (Sarsıntı Kökünden Çözüldü: GPU Hızlandırmalı Opacity) */
         .highlight-building {
-            animation: pulse-red 1.2s infinite alternate ease-in-out;
+            /* Titremeyi önlemek için SVG boyutunu değiştirecek hiçbir şey canlandırılamaz */
+            filter: drop-shadow(0 0 15px rgba(231, 76, 60, 1)); /* Sabit gölge */
+            animation: pulse-opacity 1s infinite alternate ease-in-out;
             pointer-events: none;
-            will-change: opacity, filter; /* Tarayıcıyı donanımsal hızlandırır */
-            stroke-width: 3 !important; /* Kalınlık sabitlendi, titreme yapmaz */
+            transform: translateZ(0); /* GPU Hızlandırmasını zorlar */
         }
-        @keyframes pulse-red {
-            0% { fill-opacity: 0.3; stroke-opacity: 0.5; filter: drop-shadow(0 0 5px rgba(231, 76, 60, 0.4)); }
-            100% { fill-opacity: 0.85; stroke-opacity: 1; filter: drop-shadow(0 0 20px rgba(231, 76, 60, 1)); }
+        @keyframes pulse-opacity {
+            0% { opacity: 0.3; }
+            100% { opacity: 1; }
         }
 
         #iosModal { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.4); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 9999; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s ease; }
@@ -190,12 +191,12 @@
             var foundPOI = poiListesi.find(poi => poi.ad.includes(searchTerm));
 
             if (foundPOI) {
-                resultsDiv.innerHTML = ""; // Sessizce uçar, bildirim vermez.
+                resultsDiv.innerHTML = ""; 
                 if (aktifVurgu) map.removeLayer(aktifVurgu);
 
                 if (foundPOI.tip === "polygon") {
                     aktifVurgu = L.polygon(foundPOI.latLngs, {
-                        color: '#e74c3c', fillColor: '#e74c3c', className: 'highlight-building' 
+                        color: '#e74c3c', fillColor: '#e74c3c', weight: 2, className: 'highlight-building' 
                     }).addTo(map);
                     
                     aktifVurgu.bindPopup("<b style='color:#e74c3c'>" + foundPOI.ad.toUpperCase() + "</b>").openPopup();
@@ -203,7 +204,7 @@
                     
                 } else {
                     aktifVurgu = L.circleMarker([foundPOI.lat, foundPOI.lng], {
-                        radius: 12, color: '#e74c3c', fillColor: '#e74c3c', className: 'highlight-building'
+                        radius: 12, color: '#e74c3c', fillColor: '#e74c3c', weight: 2, className: 'highlight-building'
                     }).addTo(map);
                     
                     aktifVurgu.bindPopup("<b style='color:#e74c3c'>" + foundPOI.ad.toUpperCase() + "</b>").openPopup();
@@ -279,7 +280,6 @@
             }
         });
 
-        // GRAFİK MODALI
         var currentChart = null;
         function openChart(event, element) {
             var baslik = element.getAttribute('data-baslik'); var mevcut = parseFloat(element.getAttribute('data-mevcut')); var eski = parseFloat(element.getAttribute('data-eski')); var birim = element.getAttribute('data-birim'); var ibreli = parseInt(element.getAttribute('data-ibreli')) || 0; var yaprakli = parseInt(element.getAttribute('data-yaprakli')) || 0;
@@ -304,40 +304,34 @@
         }
         function closeChart() { document.getElementById('iosModal').classList.remove('show'); setTimeout(() => { document.getElementById('iosModal').style.display = 'none'; }, 400); }
         
-        // --- 15 SANİYE İŞLEM YAPILMAZSA SIFIRLAMA (IDLE TIMER) ---
+        // --- 15 SANİYE İŞLEM YAPILMAZSA SIFIRLAMA ---
         var idleTimer; 
-        function resetView() { 
-            clearHighlight(); // Vurguyu ve arama kutusunu temizle, kioska dön
-            map.closePopup(); // Açık pop-upları kapat
+        function resetInteraction() { 
+            clearHighlight(); 
+            map.closePopup(); 
         }
         function handleInteraction() { 
             clearTimeout(idleTimer); 
-            idleTimer = setTimeout(resetView, 15000); // 15 saniye dokunulmazsa sıfırla
+            idleTimer = setTimeout(resetInteraction, 15000); 
         }
 
-        // Dinleyiciler
         document.addEventListener('touchstart', handleInteraction, {passive: true}); 
         document.addEventListener('mousedown', handleInteraction); 
-        document.addEventListener('keydown', handleInteraction); // Klavyeye basılmasını da say
+        document.addEventListener('keydown', handleInteraction); 
         map.on('zoomstart', handleInteraction); 
         map.on('dragstart', handleInteraction);
         
-        // İlk açılışta sayacı başlat
         handleInteraction();
 
-        // --- 60 SANİYEDE BİR HARİTA TURU (EKRAN KORUYUCU ŞOV) ---
+        // --- 60 SANİYEDE BİR HARİTA TURU ---
         setInterval(() => {
-            // Sadece ekranda bir arama vurgusu yoksa (Kiosk boşta bekliyorsa) tur yap
             if (!aktifVurgu && globalAnaKatman) {
-                // Alanın tamamını göster
                 map.flyToBounds(globalAnaKatman.getBounds(), { padding: [50, 50], duration: 3.5 });
-                
-                // 8 saniye alanı gösterip yuvaya (Kioska) dön
                 setTimeout(() => {
                     if (!aktifVurgu) map.flyTo(kioskLatLng, 18, { duration: 3.5 });
                 }, 8000);
             }
-        }, 60000); // Her 60 saniyede (60000 ms) bir tetiklenir
+        }, 60000); 
 
     </script>
 </body>
