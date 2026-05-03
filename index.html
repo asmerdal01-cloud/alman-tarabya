@@ -126,9 +126,9 @@
         var transformedKiosk = proj4("EPSG:5254", "EPSG:4326", rawKioskCoords);
         var kioskLatLng = L.latLng(transformedKiosk[1], transformedKiosk[0]);
         
-        // SINIRSIZ KAYDIRMA İÇİN GENİŞLETİLMİŞ CANVAS MOTORU
+        // AĞAÇ ANİMASYONLARI (PULSE) VE SINIRSIZ KAYDIRMA İÇİN GELİŞMİŞ SVG MOTORU
         var map = L.map('map', { 
-            renderer: L.canvas({ padding: 3.0 }), // Ekranın %300 dışına kadar her şeyi hazırda çizer!
+            renderer: L.svg({ padding: 3.0 }), // Hem nefes alma efektini çalıştırır hem de kesilmeyi/gri boşlukları önler!
             zoomControl: false, 
             attributionControl: false, 
             minZoom: 12, 
