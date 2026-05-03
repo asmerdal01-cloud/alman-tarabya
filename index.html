@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SENTREE - SİNEMATİK BİNA VURGUSU</title>
+    <title>SENTREE - AKILLI KİOSK ARAYÜZÜ</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
@@ -21,7 +21,6 @@
         .sidebar-powered { text-align: right; margin-top: 15px; font-size: 9px; color: #777; font-style: italic; }
         .sidebar-content { padding: 15px; flex-grow: 1; overflow-y: auto; }
 
-        /* ARAMA ÇUBUĞU VE BUTON (YEŞİLE DÖNDÜRÜLDÜ) */
         .search-container { margin-top: 15px; position: relative; display: flex; gap: 8px; }
         .search-input { flex-grow: 1; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 10px 15px; color: white; font-size: 13px; outline: none; transition: border 0.3s; }
         .search-input:focus { border-color: #2ecc71; }
@@ -48,14 +47,16 @@
         .trend-down { color: #e74c3c; font-size: 14px; }
         .trend-flat { color: #95a5a6; font-size: 14px; }
 
-        /* BİNA VURGU ANİMASYONU (Kırmızı Kalp Atışı Efekti) */
+        /* BİNA VURGU ANİMASYONU (Sarsıntı/Titreme Giderildi) */
         .highlight-building {
             animation: pulse-red 1.2s infinite alternate ease-in-out;
             pointer-events: none;
+            will-change: opacity, filter; /* Tarayıcıyı donanımsal hızlandırır */
+            stroke-width: 3 !important; /* Kalınlık sabitlendi, titreme yapmaz */
         }
         @keyframes pulse-red {
-            0% { fill-opacity: 0.3; stroke-opacity: 0.5; filter: drop-shadow(0 0 5px rgba(231, 76, 60, 0.5)); }
-            100% { fill-opacity: 0.85; stroke-opacity: 1; stroke-width: 4; filter: drop-shadow(0 0 20px rgba(231, 76, 60, 1)); }
+            0% { fill-opacity: 0.3; stroke-opacity: 0.5; filter: drop-shadow(0 0 5px rgba(231, 76, 60, 0.4)); }
+            100% { fill-opacity: 0.85; stroke-opacity: 1; filter: drop-shadow(0 0 20px rgba(231, 76, 60, 1)); }
         }
 
         #iosModal { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.4); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 9999; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s ease; }
@@ -123,6 +124,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
+        // Saat Mantığı
         setInterval(() => {
             const now = new Date();
             const days = ["PAZAR", "PAZARTESİ", "SALI", "ÇARŞAMBA", "PERŞEMBE", "CUMA", "CUMARTESİ"];
@@ -133,14 +135,16 @@
 
         proj4.defs("EPSG:5254", "+proj=tmerc +lat_0=0 +lon_0=30 +k=1 +x_0=500000 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs");
 
+        // KİOSK KOORDİNATLARI
         var rawKioskCoords = [421029.4472, 4556083.3033]; 
         var transformedKiosk = proj4("EPSG:5254", "EPSG:4326", rawKioskCoords);
         var kioskLatLng = L.latLng(transformedKiosk[1], transformedKiosk[0]);
         
+        // BAŞLANGIÇTA DOĞRUDAN KİOSKA YAKINLAŞMIŞ BAŞLAR
         var map = L.map('map', { zoomControl: false, attributionControl: false, minZoom: 12, maxZoom: 25, zoomSnap: 0.1, zoomDelta: 0.1 }).setView(kioskLatLng, 18);
         
         var kioskIcon = L.divIcon({ html: '<div style="background-color:#3498db; width:16px; height:16px; border-radius:50%; border:3px solid white; box-shadow:0 0 10px rgba(0,0,0,0.5);"></div>', className: '', iconSize: [22, 22], iconAnchor: [11, 11] });
-        L.marker(kioskLatLng, {icon: kioskIcon}).addTo(map).bindPopup("<b style='color:#3498db'>Şu An Buradasınız (Kiosk)</b>").openPopup();
+        L.marker(kioskLatLng, {icon: kioskIcon}).addTo(map).bindPopup("<b style='color:#3498db'>Şu An Buradasınız</b>").openPopup();
 
         var aktifVurgu = null;
 
@@ -186,16 +190,12 @@
             var foundPOI = poiListesi.find(poi => poi.ad.includes(searchTerm));
 
             if (foundPOI) {
-                // Başarılı aramada yazıyı tamamen sil
-                resultsDiv.innerHTML = ""; 
-
+                resultsDiv.innerHTML = ""; // Sessizce uçar, bildirim vermez.
                 if (aktifVurgu) map.removeLayer(aktifVurgu);
 
                 if (foundPOI.tip === "polygon") {
                     aktifVurgu = L.polygon(foundPOI.latLngs, {
-                        color: '#e74c3c',
-                        fillColor: '#e74c3c',
-                        className: 'highlight-building' 
+                        color: '#e74c3c', fillColor: '#e74c3c', className: 'highlight-building' 
                     }).addTo(map);
                     
                     aktifVurgu.bindPopup("<b style='color:#e74c3c'>" + foundPOI.ad.toUpperCase() + "</b>").openPopup();
@@ -213,7 +213,6 @@
                 document.getElementById('clearRouteBtn').style.display = 'block';
 
             } else {
-                // Sadece bulunamazsa uyarı ver
                 resultsDiv.innerHTML = `<span style="color:#aaa">Konum bulunamadı.</span>`;
             }
         }
@@ -280,6 +279,7 @@
             }
         });
 
+        // GRAFİK MODALI
         var currentChart = null;
         function openChart(event, element) {
             var baslik = element.getAttribute('data-baslik'); var mevcut = parseFloat(element.getAttribute('data-mevcut')); var eski = parseFloat(element.getAttribute('data-eski')); var birim = element.getAttribute('data-birim'); var ibreli = parseInt(element.getAttribute('data-ibreli')) || 0; var yaprakli = parseInt(element.getAttribute('data-yaprakli')) || 0;
@@ -303,9 +303,42 @@
             }
         }
         function closeChart() { document.getElementById('iosModal').classList.remove('show'); setTimeout(() => { document.getElementById('iosModal').style.display = 'none'; }, 400); }
-        var idleTimer; function resetView() { if(globalAnaKatman) { map.closePopup(); map.flyTo(kioskLatLng, 18, { duration: 2 }); } }
-        function handleInteraction() { clearTimeout(idleTimer); idleTimer = setTimeout(resetView, 15000); }
-        document.addEventListener('touchstart', handleInteraction, {passive: true}); document.addEventListener('mousedown', handleInteraction); map.on('zoomstart', handleInteraction); map.on('dragstart', handleInteraction);
+        
+        // --- 15 SANİYE İŞLEM YAPILMAZSA SIFIRLAMA (IDLE TIMER) ---
+        var idleTimer; 
+        function resetView() { 
+            clearHighlight(); // Vurguyu ve arama kutusunu temizle, kioska dön
+            map.closePopup(); // Açık pop-upları kapat
+        }
+        function handleInteraction() { 
+            clearTimeout(idleTimer); 
+            idleTimer = setTimeout(resetView, 15000); // 15 saniye dokunulmazsa sıfırla
+        }
+
+        // Dinleyiciler
+        document.addEventListener('touchstart', handleInteraction, {passive: true}); 
+        document.addEventListener('mousedown', handleInteraction); 
+        document.addEventListener('keydown', handleInteraction); // Klavyeye basılmasını da say
+        map.on('zoomstart', handleInteraction); 
+        map.on('dragstart', handleInteraction);
+        
+        // İlk açılışta sayacı başlat
+        handleInteraction();
+
+        // --- 60 SANİYEDE BİR HARİTA TURU (EKRAN KORUYUCU ŞOV) ---
+        setInterval(() => {
+            // Sadece ekranda bir arama vurgusu yoksa (Kiosk boşta bekliyorsa) tur yap
+            if (!aktifVurgu && globalAnaKatman) {
+                // Alanın tamamını göster
+                map.flyToBounds(globalAnaKatman.getBounds(), { padding: [50, 50], duration: 3.5 });
+                
+                // 8 saniye alanı gösterip yuvaya (Kioska) dön
+                setTimeout(() => {
+                    if (!aktifVurgu) map.flyTo(kioskLatLng, 18, { duration: 3.5 });
+                }, 8000);
+            }
+        }, 60000); // Her 60 saniyede (60000 ms) bir tetiklenir
+
     </script>
 </body>
 </html>
