@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SenTree - GIS Tabanlı Kentsel Ekosistem Hizmetleri Takip Sistemi</title>
+    <title>SenTree - EPSG:5254 Koordinat Sistemi</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
@@ -70,33 +70,45 @@
 
     <div id="map"></div>
 
+    <!-- Leaflet, MarkerCluster, PapaParse ve PROJ4JS Kütüphaneleri -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
 
     <script>
-        // İŞTE HAYAT KURTARAN MAXZOOM EKLENTİSİ BURADA!
+        // EPSG:5254 (TUREF / TM30) Tanımlaması
+        proj4.defs("EPSG:5254", "+proj=tmerc +lat_0=0 +lon_0=30 +k=1 +x_0=500000 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs");
+
         var map = L.map('map', { 
             zoomControl: false, 
             attributionControl: false, 
             minZoom: 12, 
-            maxZoom: 25, // <-- Hatanızı çözen satır
+            maxZoom: 19, 
             zoomSnap: 0.1, 
             zoomDelta: 0.1
         });
 
         var globalAnaKatman; 
         
+        // maxClusterRadius düşürüldü (25) böylece ağaçlar daha çabuk açılacak, sürekli tıklama gerekmeyecek
         var markers = L.markerClusterGroup({
             showCoverageOnHover: false,
-            maxClusterRadius: 50
+            maxClusterRadius: 25,
+            disableClusteringAtZoom: 18 // 18. zoom seviyesine gelince kümelemeyi tamamen bırakır
         });
 
-        // --- GEOJSON YÜKLEME VE OTOMATİK SIĞDIRMA ---
+        // --- EPSG:5254 GEOJSON YÜKLEME ---
         fetch('veri.geojson')
             .then(response => response.json())
             .then(data => {
                 globalAnaKatman = L.geoJSON(data, {
+                    // GeoJSON içindeki EPSG:5254 X/Y değerlerini WGS84'e çeviriyoruz
+                    coordsToLatLng: function (coords) {
+                        // coords[0] = X (Doğu), coords[1] = Y (Kuzey)
+                        var transformed = proj4("EPSG:5254", "EPSG:4326", [coords[0], coords[1]]);
+                        return new L.LatLng(transformed[1], transformed[0]);
+                    },
                     style: { color: "darkgray", weight: 1, opacity: 0.6, fillColor: "gray", fillOpacity: 0.1 }
                 }).addTo(map);
                 
@@ -122,17 +134,23 @@
                     for (var i = 1; i < veriler.length; i++) {
                         var satir = veriler[i];
                         
-                        // Enlem (H=7), Boylam (I=8), Simge Boyutu (F=5). Virgüllü girişleri tolere et.
-                        var lat = parseFloat(satir[7] ? satir[7].toString().replace(',', '.') : "NaN"); 
-                        var lng = parseFloat(satir[8] ? satir[8].toString().replace(',', '.') : "NaN"); 
+                        // Metin okuma ve temizleme (virgülleri ayarlar)
+                        var rawY = parseFloat(satir[7] ? satir[7].toString().replace(',', '.') : "NaN"); // H Sütunu = Kuzey (Y)
+                        var rawX = parseFloat(satir[8] ? satir[8].toString().replace(',', '.') : "NaN"); // I Sütunu = Doğu (X)
                         
                         var simgeBoyutu = parseFloat(satir[5] ? satir[5].toString().replace(',', '.') : "8");
                         if (isNaN(simgeBoyutu) || simgeBoyutu <= 0) simgeBoyutu = 8;
 
-                        if (!isNaN(lat) && !isNaN(lng)) {
+                        if (!isNaN(rawY) && !isNaN(rawX) && rawY > 1000 && rawX > 1000) {
+                            
+                            // PROJ4JS İLE EXCEL VERİSİNİ DÖNÜŞTÜR (X ve Y'den Enlem ve Boylama)
+                            // proj4'e önce X (Doğu), sonra Y (Kuzey) verilir
+                            var convertedCoords = proj4("EPSG:5254", "EPSG:4326", [rawX, rawY]);
+                            var lng = convertedCoords[0]; // Çevrilmiş Boylam
+                            var lat = convertedCoords[1]; // Çevrilmiş Enlem
+
                             var popupHTML = "<div style='min-width:180px'><h3 class='agac-popup-baslik'>Biyometrik Analiz</h3>";
                             
-                            // A(0), B(1), C(2), G(6), H(7), I(8), J(9)
                             [0, 1, 2, 6, 7, 8, 9].forEach(idx => {
                                 if(satir[idx]) popupHTML += `<div class="agac-popup-satir"><span>${basliklar[idx]}</span><span style="font-weight:600">${satir[idx]}</span></div>`;
                             });
@@ -148,7 +166,7 @@
                     }
                     map.addLayer(markers);
 
-                    // Sabit panel verileri K(10), L(11), M(12), N(13), O(14), P(15)
+                    // Sabit panel verileri K(10) ile P(15) arası
                     var panelSutunlari = [10, 11, 12, 13, 14, 15]; 
                     var sonGuncelVeri = null;
                     
