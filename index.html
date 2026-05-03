@@ -50,16 +50,15 @@
         .trend-down { color: #e74c3c; font-size: 14px; }
         .trend-flat { color: #95a5a6; font-size: 14px; }
 
-        /* YILAN ROTA ANİMASYONU */
+        /* YENİ: GÜVENİLİR AKAN LAZER ANİMASYONU */
         .animated-route-line {
-            stroke-dasharray: 10000;
-            stroke-dashoffset: 10000;
-            animation: drawRoute 2s ease-out forwards;
-            filter: drop-shadow(0px 0px 8px rgba(46, 204, 113, 0.8));
+            stroke-dasharray: 15, 15; 
+            animation: dashMove 1s linear infinite;
+            filter: drop-shadow(0px 0px 6px rgba(46, 204, 113, 0.9));
         }
-        @keyframes drawRoute { to { stroke-dashoffset: 0; } }
+        @keyframes dashMove { to { stroke-dashoffset: -30; } }
 
-        /* iOS KLASÖR MODALI */
+        /* Diğer Harita Stilleri */
         #iosModal { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.4); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 9999; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s ease; }
         #iosModal.show { opacity: 1; }
         #iosModalContent { width: 90%; max-width: 700px; height: 450px; background: rgba(30, 30, 30, 0.85); border-radius: 24px; border: 1px solid rgba(255,255,255,0.15); padding: 25px; box-shadow: 0 25px 50px rgba(0,0,0,0.5); transform: scale(0); opacity: 0; transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.2), opacity 0.4s ease; position: relative; display: flex; flex-direction: column; }
@@ -140,7 +139,7 @@
 
         proj4.defs("EPSG:5254", "+proj=tmerc +lat_0=0 +lon_0=30 +k=1 +x_0=500000 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs");
 
-        // --- VERDİĞİNİZ KİOSK VE POI KOORDİNATLARI ---
+        // --- VERDİĞİNİZ KİOSK KOORDİNATLARI ---
         var rawKioskCoords = [421029.4472, 4556083.3033]; // Kiosk: X, Y
         var transformedKiosk = proj4("EPSG:5254", "EPSG:4326", rawKioskCoords);
         var kioskLatLng = L.latLng(transformedKiosk[1], transformedKiosk[0]);
@@ -154,6 +153,7 @@
         var cizilenRotaCizgisi = null; 
         var hedefSimgesi = null;
 
+        // VERDİĞİNİZ BİNA KOORDİNATLARI (NetCAD X ve Y değerleri)
         var rawPoiListesi = [
             { ad: "lokanta", x: 420962.2129, y: 4556130.5068 },
             { ad: "tuvalet", x: 421041.2371, y: 4555967.8822 },
@@ -165,7 +165,20 @@
             return { ad: poi.ad, lat: trans[1], lng: trans[0] };
         });
 
-        // GeoJSON ağ okuyucusu
+        // TERS KOORDİNAT (Y,X) KORUYUCU FONKSİYON
+        function parseGeoJsonCoord(coordArray) {
+            var a = parseFloat(coordArray[0]); 
+            var b = parseFloat(coordArray[1]);
+            if (isNaN(a) || isNaN(b)) return null;
+            
+            // X (Doğu) Türkiye'de Y'den (Kuzey) her zaman küçüktür. Bunu algıla ve düzelt.
+            var x = (a < b) ? a : b; 
+            var y = (a > b) ? a : b;
+            
+            return proj4("EPSG:5254", "EPSG:4326", [x, y]); // Çıktı olarak [Lng, Lat] döner
+        }
+
+        // yollar.geojson dosyasını okuyup gizli ağ kuruyoruz
         fetch('yollar.geojson')
             .then(response => response.json())
             .then(data => {
@@ -174,8 +187,11 @@
                         var coords = feature.geometry.type === "LineString" ? [feature.geometry.coordinates] : feature.geometry.coordinates;
                         coords.forEach(line => {
                             for (var i = 0; i < line.length - 1; i++) {
-                                var p1 = proj4("EPSG:5254", "EPSG:4326", [line[i][0], line[i][1]]);
-                                var p2 = proj4("EPSG:5254", "EPSG:4326", [line[i+1][0], line[i+1][1]]);
+                                var p1 = parseGeoJsonCoord(line[i]);
+                                var p2 = parseGeoJsonCoord(line[i+1]);
+                                
+                                if (!p1 || !p2) continue;
+
                                 var n1 = `${p1[1].toFixed(6)},${p1[0].toFixed(6)}`;
                                 var n2 = `${p2[1].toFixed(6)},${p2[0].toFixed(6)}`;
                                 var dist = map.distance(L.latLng(p1[1], p1[0]), L.latLng(p2[1], p2[0]));
@@ -189,8 +205,8 @@
                         });
                     }
                 });
-                console.log("Gizli Ağ Kuruldu! Düğüm Sayısı:", Object.keys(agDugumleri).length);
-            }).catch(err => console.log("yollar.geojson henüz yok."));
+                console.log("Gizli Ağ Kuruldu! Toplam Düğüm:", Object.keys(agDugumleri).length);
+            }).catch(err => console.log("yollar.geojson dosyası henüz yok veya okunamadı."));
 
         function enYakinDugumBul(latlng) {
             var minMesafe = Infinity; var enYakin = null;
@@ -203,6 +219,7 @@
         }
 
         function dijkstra(baslangicDugumu, bitisDugumu) {
+            if (!baslangicDugumu || !bitisDugumu) return null; 
             var mesafeler = {}; var onceki = {}; var islenecekler = [];
             for (var dugum in agDugumleri) { mesafeler[dugum] = Infinity; onceki[dugum] = null; }
             mesafeler[baslangicDugumu] = 0; islenecekler.push({ dugum: baslangicDugumu, mesafe: 0 });
@@ -240,7 +257,7 @@
             var foundPOI = poiListesi.find(poi => poi.ad.includes(searchTerm));
 
             if (foundPOI) {
-                // UI'ı anında güncelle ve tarayıcıya nefes aldırıp işlemi başlat (Takılmayı çözen Kısım)
+                // UI'ı anında güncelle ve tarayıcıya nefes aldırıp işlemi başlat (KESİNTİSİZ ÇALIŞMA)
                 resultsDiv.innerHTML = `<span style="color:#2ecc71">Hedef bulundu: <b>${foundPOI.ad.toUpperCase()}</b>. Rota çiziliyor... ⏳</span>`;
                 
                 setTimeout(() => {
@@ -249,6 +266,7 @@
                     var hedefLatLng = L.latLng(foundPOI.lat, foundPOI.lng);
                     var yolKordinatlari = [];
 
+                    // Ağdan yolu hesapla
                     if (Object.keys(agDugumleri).length > 0) {
                         var baslangicDugumu = enYakinDugumBul(kioskLatLng);
                         var bitisDugumu = enYakinDugumBul(hedefLatLng);
@@ -257,6 +275,7 @@
                         if (hesaplananYol && hesaplananYol.length > 0) { yolKordinatlari = hesaplananYol; }
                     }
 
+                    // Yol ağda yoksa veya GeoJSON eksikse direkt çizgi çek
                     if (yolKordinatlari.length === 0) {
                         yolKordinatlari = [[kioskLatLng.lat, kioskLatLng.lng], [hedefLatLng.lat, hedefLatLng.lng]];
                     }
@@ -294,7 +313,7 @@
             map.setView(kioskLatLng, 18);
         }
 
-        // --- EXCEL AĞAÇ VERİLERİNİ YÜKLEME ---
+        // --- EXCEL AĞAÇ VERİLERİNİ YÜKLEME VE PANEL DOLDURMA ---
         var globalAnaKatman; 
         var markers = L.markerClusterGroup({ showCoverageOnHover: false, maxClusterRadius: 35, disableClusteringAtZoom: 40 });
 
@@ -326,7 +345,6 @@
                     }
                     map.addLayer(markers);
 
-                    // Panel Verilerini Doldur
                     var panelSutunlari = [10, 11, 12, 13, 14, 15]; var eskiVeriSutunlari = [16, 17, 18, 19, 20, 21]; var birimler = { 10: "ton", 11: "ton", 12: "ton", 13: "TL", 14: "", 15: "adet" };
                     var sonGuncelVeri = veriler.slice().reverse().find(row => row && row[10] && row[10].toString().trim() !== "");
                     if (sonGuncelVeri) {
@@ -347,7 +365,7 @@
             }
         });
 
-        // --- TAMAMI GERİ YÜKLENMİŞ GRAFİK MANTIĞI ---
+        // --- iOS KLASÖR MODALI VE GRAFİKLER ---
         var currentChart = null;
         function openChart(event, element) {
             var baslik = element.getAttribute('data-baslik');
