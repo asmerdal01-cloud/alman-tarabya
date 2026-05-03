@@ -138,7 +138,7 @@
         }).setView(kioskLatLng, 19);
         
         var kioskIcon = L.divIcon({ html: '<div style="background-color:#3498db; width:16px; height:16px; border-radius:50%; border:3px solid white; box-shadow:0 0 10px rgba(0,0,0,0.5);"></div>', className: '', iconSize: [22, 22], iconAnchor: [11, 11] });
-        L.marker(kioskLatLng, {icon: kioskIcon}).addTo(map).bindPopup("<b style='color:#3498db'>Şu An Buradasınız</b>").openPopup();
+        L.marker(kioskLatLng, {icon: kioskIcon}).addTo(map).bindPopup("<b style='color:#3498db'>Şu An Buradasınız</b>", { closeButton: false }).openPopup();
 
         var aktifVurgularKatmani = L.featureGroup().addTo(map);
 
