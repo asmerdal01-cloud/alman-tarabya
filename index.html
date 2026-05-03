@@ -47,13 +47,12 @@
         .trend-down { color: #e74c3c; font-size: 14px; }
         .trend-flat { color: #95a5a6; font-size: 14px; }
 
-        /* VURGU ANİMASYONU (Sarsıntı Kökünden Çözüldü: GPU Hızlandırmalı Opacity) */
+        /* VURGU ANİMASYONU */
         .highlight-building {
-            /* Titremeyi önlemek için SVG boyutunu değiştirecek hiçbir şey canlandırılamaz */
-            filter: drop-shadow(0 0 15px rgba(231, 76, 60, 1)); /* Sabit gölge */
+            filter: drop-shadow(0 0 15px rgba(231, 76, 60, 1)); 
             animation: pulse-opacity 1s infinite alternate ease-in-out;
             pointer-events: none;
-            transform: translateZ(0); /* GPU Hızlandırmasını zorlar */
+            transform: translateZ(0); 
         }
         @keyframes pulse-opacity {
             0% { opacity: 0.3; }
@@ -95,7 +94,7 @@
             <p class="sidebar-subtitle">GIS TABANLI KENTSEL EKOSİSTEM HİZMETLERİ TAKİP SİSTEMİ</p>
             
             <div class="search-container">
-                <input type="text" id="searchInput" class="search-input" placeholder="Lokanta, Tuvalet, Danışma ara..." onkeypress="handleKeyPress(event)">
+                <input type="text" id="searchInput" class="search-input" placeholder="Lokanta, Tuvalet ara..." onkeypress="handleKeyPress(event)">
                 <button class="search-btn" onclick="searchLocation()">Ara</button>
             </div>
             <div id="searchResults" class="search-results"></div>
@@ -125,7 +124,6 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
-        // Saat Mantığı
         setInterval(() => {
             const now = new Date();
             const days = ["PAZAR", "PAZARTESİ", "SALI", "ÇARŞAMBA", "PERŞEMBE", "CUMA", "CUMARTESİ"];
@@ -136,18 +134,17 @@
 
         proj4.defs("EPSG:5254", "+proj=tmerc +lat_0=0 +lon_0=30 +k=1 +x_0=500000 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs");
 
-        // KİOSK KOORDİNATLARI
         var rawKioskCoords = [421029.4472, 4556083.3033]; 
         var transformedKiosk = proj4("EPSG:5254", "EPSG:4326", rawKioskCoords);
         var kioskLatLng = L.latLng(transformedKiosk[1], transformedKiosk[0]);
         
-        // BAŞLANGIÇTA DOĞRUDAN KİOSKA YAKINLAŞMIŞ BAŞLAR
         var map = L.map('map', { zoomControl: false, attributionControl: false, minZoom: 12, maxZoom: 25, zoomSnap: 0.1, zoomDelta: 0.1 }).setView(kioskLatLng, 18);
         
         var kioskIcon = L.divIcon({ html: '<div style="background-color:#3498db; width:16px; height:16px; border-radius:50%; border:3px solid white; box-shadow:0 0 10px rgba(0,0,0,0.5);"></div>', className: '', iconSize: [22, 22], iconAnchor: [11, 11] });
         L.marker(kioskLatLng, {icon: kioskIcon}).addTo(map).bindPopup("<b style='color:#3498db'>Şu An Buradasınız</b>").openPopup();
 
-        var aktifVurgu = null;
+        // Aktif vurguları grup olarak tutacak katman (Çoklu arama için)
+        var aktifVurgularKatmani = L.featureGroup().addTo(map);
 
         var rawPoiListesi = [
             { 
@@ -161,7 +158,7 @@
                 ]
             },
             { ad: "lokanta", tip: "point", x: 420962.2129, y: 4556130.5068 },
-            { ad: "danışma", tip: "point", x: 420952.2674, y: 4556029.0993 }
+            { ad: "tuvalet", tip: "point", x: 420952.2674, y: 4556029.0993 } // Eskiden danışmaydı, tuvalet oldu.
         ];
 
         var poiListesi = rawPoiListesi.map(poi => {
@@ -188,28 +185,31 @@
                 return; 
             }
 
-            var foundPOI = poiListesi.find(poi => poi.ad.includes(searchTerm));
+            // 'find' yerine 'filter' kullanarak eşleşen TÜM sonuçları al
+            var foundPOIs = poiListesi.filter(poi => poi.ad.includes(searchTerm));
 
-            if (foundPOI) {
+            if (foundPOIs.length > 0) {
                 resultsDiv.innerHTML = ""; 
-                if (aktifVurgu) map.removeLayer(aktifVurgu);
+                aktifVurgularKatmani.clearLayers(); // Eski aramaları temizle
 
-                if (foundPOI.tip === "polygon") {
-                    aktifVurgu = L.polygon(foundPOI.latLngs, {
-                        color: '#e74c3c', fillColor: '#e74c3c', weight: 2, className: 'highlight-building' 
-                    }).addTo(map);
-                    
-                    aktifVurgu.bindPopup("<b style='color:#e74c3c'>" + foundPOI.ad.toUpperCase() + "</b>").openPopup();
-                    map.flyToBounds(aktifVurgu.getBounds(), { padding: [80, 80], maxZoom: 19.5, duration: 2.5 });
-                    
-                } else {
-                    aktifVurgu = L.circleMarker([foundPOI.lat, foundPOI.lng], {
-                        radius: 12, color: '#e74c3c', fillColor: '#e74c3c', weight: 2, className: 'highlight-building'
-                    }).addTo(map);
-                    
-                    aktifVurgu.bindPopup("<b style='color:#e74c3c'>" + foundPOI.ad.toUpperCase() + "</b>").openPopup();
-                    map.flyTo([foundPOI.lat, foundPOI.lng], 19.5, { duration: 2.5 });
-                }
+                // Bulunan tüm sonuçları haritaya ekle
+                foundPOIs.forEach(poi => {
+                    var vurgu;
+                    if (poi.tip === "polygon") {
+                        vurgu = L.polygon(poi.latLngs, {
+                            color: '#e74c3c', fillColor: '#e74c3c', weight: 3, className: 'highlight-building' 
+                        });
+                    } else {
+                        vurgu = L.circleMarker([poi.lat, poi.lng], {
+                            radius: 12, color: '#e74c3c', fillColor: '#e74c3c', weight: 3, className: 'highlight-building'
+                        });
+                    }
+                    // Pop-up bağlama kodları silindi, sadece sessizce yanıp sönecek
+                    aktifVurgularKatmani.addLayer(vurgu);
+                });
+
+                // Kamerayı, bulunan tüm sonuçları ekrana sığdıracak şekilde ayarla
+                map.flyToBounds(aktifVurgularKatmani.getBounds(), { padding: [80, 80], maxZoom: 19.5, duration: 2.5 });
 
                 document.getElementById('clearRouteBtn').style.display = 'block';
 
@@ -219,10 +219,7 @@
         }
 
         function clearHighlight() {
-            if (aktifVurgu) {
-                map.removeLayer(aktifVurgu);
-                aktifVurgu = null;
-            }
+            aktifVurgularKatmani.clearLayers();
             document.getElementById('searchInput').value = "";
             document.getElementById('searchResults').innerHTML = "";
             document.getElementById('clearRouteBtn').style.display = 'none';
@@ -325,10 +322,13 @@
 
         // --- 60 SANİYEDE BİR HARİTA TURU ---
         setInterval(() => {
-            if (!aktifVurgu && globalAnaKatman) {
+            // Hiçbir arama vurgusu yoksa (aktifVurgularKatmani boşsa) tur yap
+            if (aktifVurgularKatmani.getLayers().length === 0 && globalAnaKatman) {
                 map.flyToBounds(globalAnaKatman.getBounds(), { padding: [50, 50], duration: 3.5 });
                 setTimeout(() => {
-                    if (!aktifVurgu) map.flyTo(kioskLatLng, 18, { duration: 3.5 });
+                    if (aktifVurgularKatmani.getLayers().length === 0) {
+                        map.flyTo(kioskLatLng, 18, { duration: 3.5 });
+                    }
                 }, 8000);
             }
         }, 60000); 
