@@ -23,10 +23,10 @@
 
         .search-container { margin-top: 15px; position: relative; display: flex; gap: 8px; }
         .search-input { flex-grow: 1; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 10px 15px; color: white; font-size: 13px; outline: none; transition: border 0.3s; }
-        .search-input:focus { border-color: #2ecc71; }
+        .search-input:focus { border-color: #00a8ff; } /* Arama çubuğu odağı da mavi oldu */
         .search-input::placeholder { color: #888; }
-        .search-btn { background: #2ecc71; color: #111; border: none; border-radius: 8px; padding: 0 15px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
-        .search-btn:hover { background: #27ae60; }
+        .search-btn { background: #00a8ff; color: #fff; border: none; border-radius: 8px; padding: 0 15px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
+        .search-btn:hover { background: #0097e6; }
         .search-results { margin-top: 8px; font-size: 12px; color: #ccc; }
         
         .clear-route-btn { display: none; margin-top: 5px; width: 100%; background: rgba(231, 76, 60, 0.2); border: 1px solid rgba(231, 76, 60, 0.4); color: #e74c3c; padding: 6px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: bold; transition: 0.2s; }
@@ -47,13 +47,14 @@
         .trend-down { color: #e74c3c; font-size: 14px; }
         .trend-flat { color: #95a5a6; font-size: 14px; }
 
-        /* YILAN ROTA ANİMASYONU */
+        /* UZAYAN MAVİ LAZER ANİMASYONU */
         .routing-line {
-            stroke-dasharray: 40, 15;
-            animation: dashMove 1s linear infinite;
-            filter: drop-shadow(0px 0px 6px rgba(46, 204, 113, 0.9));
+            filter: drop-shadow(0px 0px 8px rgba(0, 168, 255, 0.9));
+            /* Dash ve animasyon ayarları artık dinamik olarak JavaScript tarafından atanacak */
         }
-        @keyframes dashMove { to { stroke-dashoffset: -55; } }
+        @keyframes drawRoute {
+            to { stroke-dashoffset: 0; }
+        }
 
         #iosModal { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.4); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 9999; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s ease; }
         #iosModal.show { opacity: 1; }
@@ -131,15 +132,20 @@
 
         proj4.defs("EPSG:5254", "+proj=tmerc +lat_0=0 +lon_0=30 +k=1 +x_0=500000 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs");
 
-        // --- VERDİĞİNİZ KİOSK VE POI KOORDİNATLARI ---
-        var rawKioskCoords = [421029.4472, 4556083.3033]; // Kiosk: X, Y
+        // --- VERDİĞİNİZ KİOSK KOORDİNATLARI ---
+        var rawKioskCoords = [421029.4472, 4556083.3033]; 
         var transformedKiosk = proj4("EPSG:5254", "EPSG:4326", rawKioskCoords);
         var kioskLatLng = L.latLng(transformedKiosk[1], transformedKiosk[0]);
         
         var map = L.map('map', { zoomControl: false, attributionControl: false, minZoom: 12, maxZoom: 25, zoomSnap: 0.1, zoomDelta: 0.1 }).setView(kioskLatLng, 18);
         
-        var kioskIcon = L.divIcon({ html: '<div style="background-color:#e74c3c; width:16px; height:16px; border-radius:50%; border:3px solid white; box-shadow:0 0 10px rgba(0,0,0,0.5);"></div>', className: '', iconSize: [22, 22], iconAnchor: [11, 11] });
-        L.marker(kioskLatLng, {icon: kioskIcon}).addTo(map).bindPopup("<b style='color:#e74c3c'>Şu An Buradasınız</b>").openPopup();
+        var kioskIcon = L.divIcon({ html: '<div style="background-color:#00a8ff; width:16px; height:16px; border-radius:50%; border:3px solid white; box-shadow:0 0 10px rgba(0,0,0,0.5);"></div>', className: '', iconSize: [22, 22], iconAnchor: [11, 11] });
+        L.marker(kioskLatLng, {icon: kioskIcon}).addTo(map).bindPopup("<b style='color:#00a8ff'>Şu An Buradasınız</b>").openPopup();
+
+        var agDugumleri = {}; 
+        var cizilenRotaCizgisi = null; 
+        var hedefSimgesi = null;
+        var dugumListesi = []; 
 
         var rawPoiListesi = [
             { ad: "lokanta", x: 420962.2129, y: 4556130.5068 },
@@ -152,54 +158,44 @@
             return { ad: poi.ad, lat: trans[1], lng: trans[0] };
         });
 
-        // --- GÖMÜLÜ AĞ VE AUTO-SNAP (OTOMATİK BİRLEŞTİRME) ---
+        // --- GÖMÜLÜ AĞ VE AUTO-SNAP ---
         var yollarGeoJSON = {
             "type": "FeatureCollection",
             "name": "entities",
             "features": [
-                { "type": "Feature", "properties": { "Layer": "yollars", "SubClasses": "AcDbEntity:AcDbPolyline", "EntityHandle": "2E3" }, "geometry": { "type": "LineString", "coordinates": [ [ 29.0595076, 41.1357968 ], [ 29.0594944, 41.135781 ], [ 29.0594728, 41.1357691 ], [ 29.0594469, 41.1357665 ], [ 29.059425, 41.1357695 ], [ 29.0593991, 41.1357716 ], [ 29.0593721, 41.1357738 ], [ 29.0593441, 41.1357704 ], [ 29.0593245, 41.1357663 ], [ 29.0593018, 41.1357591 ], [ 29.0592863, 41.1357511 ], [ 29.0592719, 41.13574 ], [ 29.0592545, 41.1357273 ], [ 29.059237, 41.1357162 ], [ 29.0592196, 41.1357012 ], [ 29.0592053, 41.1356862 ], [ 29.059193, 41.1356743 ], [ 29.0591828, 41.135664 ], [ 29.0591695, 41.1356514 ], [ 29.0591604, 41.1356364 ], [ 29.0591564, 41.1356215 ], [ 29.0591566, 41.1356129 ], [ 29.0591393, 41.1355892 ], [ 29.0591406, 41.1355712 ], [ 29.059146, 41.1355556 ], [ 29.0591514, 41.1355399 ], [ 29.059162, 41.1355204 ], [ 29.0591962, 41.135473 ], [ 29.0592179, 41.1354644 ], [ 29.0592578, 41.1354572 ], [ 29.0592777, 41.1354561 ], [ 29.0593125, 41.1354602 ], [ 29.0593339, 41.1354704 ], [ 29.0593736, 41.1354782 ], [ 29.0594099, 41.1354911 ], [ 29.0594411, 41.1355151 ], [ 29.0594624, 41.1355304 ], [ 29.059482, 41.1355518 ], [ 29.059495, 41.1355745 ], [ 29.0595129, 41.1355985 ], [ 29.0595175, 41.1356186 ], [ 29.0595221, 41.1356449 ], [ 29.0595219, 41.1356612 ], [ 29.0595183, 41.13568 ], [ 29.0595147, 41.1357 ], [ 29.0595112, 41.1357176 ], [ 29.0595043, 41.1357313 ], [ 29.0594992, 41.1357413 ], [ 29.0594941, 41.13575 ], [ 29.0594728, 41.1357691 ] ] } },
-                { "type": "Feature", "properties": { "Layer": "yollars", "SubClasses": "AcDbEntity:AcDbPolyline", "EntityHandle": "2E4" }, "geometry": { "type": "LineString", "coordinates": [ [ 29.0588275, 41.1362032 ], [ 29.0587822, 41.1361483 ], [ 29.0587151, 41.1360944 ], [ 29.0586664, 41.1360199 ], [ 29.0585929, 41.1359162 ], [ 29.0585537, 41.1358019 ], [ 29.0585676, 41.1357282 ], [ 29.0586283, 41.1356656 ], [ 29.0587318, 41.1355943 ], [ 29.0587658, 41.1356263 ] ] } },
-                { "type": "Feature", "properties": { "Layer": "yollars", "SubClasses": "AcDbEntity:AcDbPolyline", "EntityHandle": "2E5" }, "geometry": { "type": "LineString", "coordinates": [ [ 29.0587318, 41.1355943 ], [ 29.0587575, 41.1355766 ], [ 29.0587387, 41.1355402 ], [ 29.0587141, 41.1355121 ], [ 29.0587182, 41.1354983 ], [ 29.0587159, 41.135476 ], [ 29.0586857, 41.1354461 ], [ 29.0586619, 41.1354133 ], [ 29.0586407, 41.1353678 ], [ 29.0586231, 41.13533 ], [ 29.0585918, 41.1353055 ], [ 29.0585452, 41.1353251 ] ] } },
-                { "type": "Feature", "properties": { "Layer": "yollars", "SubClasses": "AcDbEntity:AcDbPolyline", "EntityHandle": "2E6" }, "geometry": { "type": "LineString", "coordinates": [ [ 29.0585918, 41.1353055 ], [ 29.0586614, 41.1353071 ], [ 29.0587478, 41.1353166 ], [ 29.058838, 41.1353096 ], [ 29.0589357, 41.1352919 ], [ 29.0589775, 41.1352872 ], [ 29.0590283, 41.135319 ], [ 29.0590886, 41.1353763 ], [ 29.059207, 41.1354687 ] ] } },
-                { "type": "Feature", "properties": { "Layer": "yollars", "SubClasses": "AcDbEntity:AcDbPolyline", "EntityHandle": "2E7" }, "geometry": { "type": "LineString", "coordinates": [ [ 29.0590677, 41.1353564 ], [ 29.0589801, 41.135415 ], [ 29.0588491, 41.1355025 ], [ 29.0587575, 41.1355766 ] ] } },
-                { "type": "Feature", "properties": { "Layer": "yollars", "SubClasses": "AcDbEntity:AcDbPolyline", "EntityHandle": "2E8" }, "geometry": { "type": "LineString", "coordinates": [ [ 29.0587575, 41.1355766 ], [ 29.0588569, 41.1355624 ], [ 29.058932, 41.1355745 ], [ 29.059065, 41.1355748 ], [ 29.0591399, 41.1355802 ] ] } },
-                { "type": "Feature", "properties": { "Layer": "yollars", "SubClasses": "AcDbEntity:AcDbPolyline", "EntityHandle": "2E9" }, "geometry": { "type": "LineString", "coordinates": [ [ 29.0590677, 41.1353564 ], [ 29.0591748, 41.1353044 ], [ 29.0592504, 41.135254 ], [ 29.0593096, 41.1352145 ], [ 29.0593479, 41.1352023 ], [ 29.0593804, 41.1352267 ], [ 29.0594428, 41.1352734 ] ] } },
-                { "type": "Feature", "properties": { "Layer": "yollars", "SubClasses": "AcDbEntity:AcDbPolyline", "EntityHandle": "2EA" }, "geometry": { "type": "LineString", "coordinates": [ [ 29.0593479, 41.1352023 ], [ 29.0594336, 41.1351459 ], [ 29.0595566, 41.1350648 ], [ 29.0596455, 41.1350137 ], [ 29.0596925, 41.1349649 ], [ 29.059727, 41.1349292 ], [ 29.0597627, 41.1348922 ], [ 29.0597316, 41.1348554 ] ] } },
-                { "type": "Feature", "properties": { "Layer": "yollars", "SubClasses": "AcDbEntity:AcDbPolyline", "EntityHandle": "2EB" }, "geometry": { "type": "LineString", "coordinates": [ [ 29.0593479, 41.1352023 ], [ 29.0592626, 41.1351284 ], [ 29.0591117, 41.1349974 ], [ 29.0590238, 41.1349137 ], [ 29.0590775, 41.1348213 ], [ 29.0591405, 41.1347789 ], [ 29.0591951, 41.1347726 ], [ 29.0592684, 41.1347992 ], [ 29.0592875, 41.1348126 ], [ 29.0593098, 41.1348137 ], [ 29.0593266, 41.1348056 ], [ 29.0593681, 41.1347858 ], [ 29.0594105, 41.1347603 ], [ 29.0594469, 41.1347698 ], [ 29.0594725, 41.1347836 ], [ 29.0594932, 41.1347751 ], [ 29.0595088, 41.134762 ], [ 29.0595335, 41.1347487 ], [ 29.059558, 41.1347456 ], [ 29.0596127, 41.1347828 ] ] } },
-                { "type": "Feature", "properties": { "Layer": "yollars", "SubClasses": "AcDbEntity:AcDbPolyline", "EntityHandle": "2EC" }, "geometry": { "type": "LineString", "coordinates": [ [ 29.0589775, 41.1352872 ], [ 29.0589107, 41.1352236 ], [ 29.0588488, 41.1351721 ], [ 29.0587423, 41.1350763 ], [ 29.0587284, 41.1350474 ], [ 29.058753, 41.1350276 ], [ 29.0587968, 41.1350156 ], [ 29.0588442, 41.1350532 ], [ 29.0589869, 41.1351668 ], [ 29.0590478, 41.1352301 ], [ 29.0590294, 41.1352656 ], [ 29.0589775, 41.1352872 ] ] } }
+                { "type": "Feature", "properties": { "Layer": "yollars" }, "geometry": { "type": "LineString", "coordinates": [ [ 29.0595076, 41.1357968 ], [ 29.0594944, 41.135781 ], [ 29.0594728, 41.1357691 ], [ 29.0594469, 41.1357665 ], [ 29.059425, 41.1357695 ], [ 29.0593991, 41.1357716 ], [ 29.0593721, 41.1357738 ], [ 29.0593441, 41.1357704 ], [ 29.0593245, 41.1357663 ], [ 29.0593018, 41.1357591 ], [ 29.0592863, 41.1357511 ], [ 29.0592719, 41.13574 ], [ 29.0592545, 41.1357273 ], [ 29.059237, 41.1357162 ], [ 29.0592196, 41.1357012 ], [ 29.0592053, 41.1356862 ], [ 29.059193, 41.1356743 ], [ 29.0591828, 41.135664 ], [ 29.0591695, 41.1356514 ], [ 29.0591604, 41.1356364 ], [ 29.0591564, 41.1356215 ], [ 29.0591566, 41.1356129 ], [ 29.0591393, 41.1355892 ], [ 29.0591406, 41.1355712 ], [ 29.059146, 41.1355556 ], [ 29.0591514, 41.1355399 ], [ 29.059162, 41.1355204 ], [ 29.0591962, 41.135473 ], [ 29.0592179, 41.1354644 ], [ 29.0592578, 41.1354572 ], [ 29.0592777, 41.1354561 ], [ 29.0593125, 41.1354602 ], [ 29.0593339, 41.1354704 ], [ 29.0593736, 41.1354782 ], [ 29.0594099, 41.1354911 ], [ 29.0594411, 41.1355151 ], [ 29.0594624, 41.1355304 ], [ 29.059482, 41.1355518 ], [ 29.059495, 41.1355745 ], [ 29.0595129, 41.1355985 ], [ 29.0595175, 41.1356186 ], [ 29.0595221, 41.1356449 ], [ 29.0595219, 41.1356612 ], [ 29.0595183, 41.13568 ], [ 29.0595147, 41.1357 ], [ 29.0595112, 41.1357176 ], [ 29.0595043, 41.1357313 ], [ 29.0594992, 41.1357413 ], [ 29.0594941, 41.13575 ], [ 29.0594728, 41.1357691 ] ] } },
+                { "type": "Feature", "properties": { "Layer": "yollars" }, "geometry": { "type": "LineString", "coordinates": [ [ 29.0588275, 41.1362032 ], [ 29.0587822, 41.1361483 ], [ 29.0587151, 41.1360944 ], [ 29.0586664, 41.1360199 ], [ 29.0585929, 41.1359162 ], [ 29.0585537, 41.1358019 ], [ 29.0585676, 41.1357282 ], [ 29.0586283, 41.1356656 ], [ 29.0587318, 41.1355943 ], [ 29.0587658, 41.1356263 ] ] } },
+                { "type": "Feature", "properties": { "Layer": "yollars" }, "geometry": { "type": "LineString", "coordinates": [ [ 29.0587318, 41.1355943 ], [ 29.0587575, 41.1355766 ], [ 29.0587387, 41.1355402 ], [ 29.0587141, 41.1355121 ], [ 29.0587182, 41.1354983 ], [ 29.0587159, 41.135476 ], [ 29.0586857, 41.1354461 ], [ 29.0586619, 41.1354133 ], [ 29.0586407, 41.1353678 ], [ 29.0586231, 41.13533 ], [ 29.0585918, 41.1353055 ], [ 29.0585452, 41.1353251 ] ] } },
+                { "type": "Feature", "properties": { "Layer": "yollars" }, "geometry": { "type": "LineString", "coordinates": [ [ 29.0585918, 41.1353055 ], [ 29.0586614, 41.1353071 ], [ 29.0587478, 41.1353166 ], [ 29.058838, 41.1353096 ], [ 29.0589357, 41.1352919 ], [ 29.0589775, 41.1352872 ], [ 29.0590283, 41.135319 ], [ 29.0590886, 41.1353763 ], [ 29.059207, 41.1354687 ] ] } },
+                { "type": "Feature", "properties": { "Layer": "yollars" }, "geometry": { "type": "LineString", "coordinates": [ [ 29.0590677, 41.1353564 ], [ 29.0589801, 41.135415 ], [ 29.0588491, 41.1355025 ], [ 29.0587575, 41.1355766 ] ] } },
+                { "type": "Feature", "properties": { "Layer": "yollars" }, "geometry": { "type": "LineString", "coordinates": [ [ 29.0587575, 41.1355766 ], [ 29.0588569, 41.1355624 ], [ 29.058932, 41.1355745 ], [ 29.059065, 41.1355748 ], [ 29.0591399, 41.1355802 ] ] } },
+                { "type": "Feature", "properties": { "Layer": "yollars" }, "geometry": { "type": "LineString", "coordinates": [ [ 29.0590677, 41.1353564 ], [ 29.0591748, 41.1353044 ], [ 29.0592504, 41.135254 ], [ 29.0593096, 41.1352145 ], [ 29.0593479, 41.1352023 ], [ 29.0593804, 41.1352267 ], [ 29.0594428, 41.1352734 ] ] } },
+                { "type": "Feature", "properties": { "Layer": "yollars" }, "geometry": { "type": "LineString", "coordinates": [ [ 29.0593479, 41.1352023 ], [ 29.0594336, 41.1351459 ], [ 29.0595566, 41.1350648 ], [ 29.0596455, 41.1350137 ], [ 29.0596925, 41.1349649 ], [ 29.059727, 41.1349292 ], [ 29.0597627, 41.1348922 ], [ 29.0597316, 41.1348554 ] ] } },
+                { "type": "Feature", "properties": { "Layer": "yollars" }, "geometry": { "type": "LineString", "coordinates": [ [ 29.0593479, 41.1352023 ], [ 29.0592626, 41.1351284 ], [ 29.0591117, 41.1349974 ], [ 29.0590238, 41.1349137 ], [ 29.0590775, 41.1348213 ], [ 29.0591405, 41.1347789 ], [ 29.0591951, 41.1347726 ], [ 29.0592684, 41.1347992 ], [ 29.0592875, 41.1348126 ], [ 29.0593098, 41.1348137 ], [ 29.0593266, 41.1348056 ], [ 29.0593681, 41.1347858 ], [ 29.0594105, 41.1347603 ], [ 29.0594469, 41.1347698 ], [ 29.0594725, 41.1347836 ], [ 29.0594932, 41.1347751 ], [ 29.0595088, 41.134762 ], [ 29.0595335, 41.1347487 ], [ 29.059558, 41.1347456 ], [ 29.0596127, 41.1347828 ] ] } },
+                { "type": "Feature", "properties": { "Layer": "yollars" }, "geometry": { "type": "LineString", "coordinates": [ [ 29.0589775, 41.1352872 ], [ 29.0589107, 41.1352236 ], [ 29.0588488, 41.1351721 ], [ 29.0587423, 41.1350763 ], [ 29.0587284, 41.1350474 ], [ 29.058753, 41.1350276 ], [ 29.0587968, 41.1350156 ], [ 29.0588442, 41.1350532 ], [ 29.0589869, 41.1351668 ], [ 29.0590478, 41.1352301 ], [ 29.0590294, 41.1352656 ], [ 29.0589775, 41.1352872 ] ] } }
             ]
         };
 
-        var agDugumleri = {}; 
-        var cizilenRotaCizgisi = null; 
-        var hedefSimgesi = null;
-        var dugumListesi = []; // Auto-Snap (Otomatik Yakalama) havuzu
-
-        // AUTO-SNAP MOTORU: Birbirine yakın çizgi uçlarını lehimler
         function dugumYakala(lat, lng) {
             var targetLatLng = L.latLng(lat, lng);
             for(var i=0; i<dugumListesi.length; i++) {
-                // 5 metreden yakınsa, eski düğümün ID'sini döndür (Çizgiler birleşir)
                 if (map.distance(targetLatLng, dugumListesi[i].latLng) <= 5.0) {
                     return dugumListesi[i].id;
                 }
             }
-            // Değilse yeni düğüm yarat
             var newId = `${lat.toFixed(6)},${lng.toFixed(6)}`;
             dugumListesi.push({id: newId, latLng: targetLatLng});
             return newId;
         }
 
-        // AKILLI ÇEVİRİCİ
         function parseGeoJsonCoord(coordArray) {
             var a = parseFloat(coordArray[0]); var b = parseFloat(coordArray[1]);
             if (isNaN(a) || isNaN(b)) return null;
-            if (a < 180 && b < 180) { return [a, b]; } // Veri zaten Lng/Lat
+            if (a < 180 && b < 180) { return [a, b]; }
             var x = (a < b) ? a : b; var y = (a > b) ? a : b;
             return proj4("EPSG:5254", "EPSG:4326", [x, y]); 
         }
 
-        // AĞ KURULUMU (Lehimleme devrede)
         if (yollarGeoJSON.features && yollarGeoJSON.features.length > 0) {
             yollarGeoJSON.features.forEach(feature => {
                 if (feature.geometry.type === "LineString" || feature.geometry.type === "MultiLineString") {
@@ -210,14 +206,13 @@
                             var p2 = parseGeoJsonCoord(line[i+1]);
                             if (!p1 || !p2) continue;
 
-                            var n1 = dugumYakala(p1[1], p1[0]); // SNAP!
-                            var n2 = dugumYakala(p2[1], p2[0]); // SNAP!
+                            var n1 = dugumYakala(p1[1], p1[0]); 
+                            var n2 = dugumYakala(p2[1], p2[0]); 
                             var dist = map.distance(L.latLng(p1[1], p1[0]), L.latLng(p2[1], p2[0]));
 
                             if (!agDugumleri[n1]) agDugumleri[n1] = [];
                             if (!agDugumleri[n2]) agDugumleri[n2] = [];
                             
-                            // Kendine bağlamasını engelle
                             if(n1 !== n2) {
                                 agDugumleri[n1].push({ hedef: n2, mesafe: dist });
                                 agDugumleri[n2].push({ hedef: n1, mesafe: dist });
@@ -226,7 +221,7 @@
                     });
                 }
             });
-            console.log("Topoloji Düzeltildi! Ağ Kuruldu. Toplam Birleşik Düğüm:", Object.keys(agDugumleri).length);
+            console.log("Ağ Kuruldu! Toplam Birleşik Düğüm:", Object.keys(agDugumleri).length);
         }
 
         function enYakinDugumBul(latlng) {
@@ -284,7 +279,7 @@
             var foundPOI = poiListesi.find(poi => poi.ad.includes(searchTerm));
 
             if (foundPOI) {
-                resultsDiv.innerHTML = `<span style="color:#2ecc71">Hedef bulundu: <b>${foundPOI.ad.toUpperCase()}</b>. Rota hesaplanıyor... ⏳</span>`;
+                resultsDiv.innerHTML = `<span style="color:#00a8ff">Hedef bulundu: <b>${foundPOI.ad.toUpperCase()}</b>. Rota hesaplanıyor... ⏳</span>`;
                 
                 setTimeout(() => {
                     try {
@@ -296,7 +291,13 @@
                             var baslangicDugumu = enYakinDugumBul(kioskLatLng);
                             var bitisDugumu = enYakinDugumBul(hedefLatLng);
                             var hesaplananYol = dijkstra(baslangicDugumu, bitisDugumu);
-                            if (hesaplananYol && hesaplananYol.length > 0) { yolKordinatlari = hesaplananYol; }
+                            
+                            if (hesaplananYol && hesaplananYol.length > 0) { 
+                                // Başlangıç ve bitiş noktalarını çizgiye pürüzsüz bağla
+                                yolKordinatlari.push([kioskLatLng.lat, kioskLatLng.lng]);
+                                yolKordinatlari.push(...hesaplananYol);
+                                yolKordinatlari.push([hedefLatLng.lat, hedefLatLng.lng]);
+                            }
                         }
 
                         if (yolKordinatlari.length === 0) {
@@ -304,16 +305,31 @@
                         }
 
                         cizilenRotaCizgisi = L.polyline(yolKordinatlari, {
-                            color: '#2ecc71', weight: 6, opacity: 0.9, lineJoin: 'round', className: 'routing-line' 
+                            color: '#00a8ff', // Fütüristik Mavi
+                            weight: 6, opacity: 0.9, lineJoin: 'round', className: 'routing-line' 
                         }).addTo(map);
 
                         hedefSimgesi = L.marker(hedefLatLng, {
                             icon: L.divIcon({ html: '🎯', className: '', iconSize: [24,24], iconAnchor:[12,12]})
-                        }).addTo(map).bindPopup("<b>" + foundPOI.ad.toUpperCase() + "</b>").openPopup();
+                        }).addTo(map).bindPopup("<b style='color:#00a8ff'>" + foundPOI.ad.toUpperCase() + "</b>").openPopup();
 
                         map.fitBounds(cizilenRotaCizgisi.getBounds(), { padding: [50, 50] });
                         document.getElementById('clearRouteBtn').style.display = 'block';
-                        resultsDiv.innerHTML = `<span style="color:#2ecc71">Hedef bulundu: <b>${foundPOI.ad.toUpperCase()}</b>. Rota Çizildi! ✔️</span>`;
+                        
+                        // --- DİNAMİK ÇİZİM ANİMASYONU ---
+                        // Çizginin uzunluğunu ölçüp animasyon hızını ve akışını kusursuz ayarlıyor
+                        setTimeout(() => {
+                            var pathElement = cizilenRotaCizgisi._path;
+                            if (pathElement) {
+                                var totalLength = pathElement.getTotalLength();
+                                pathElement.style.strokeDasharray = totalLength;
+                                pathElement.style.strokeDashoffset = totalLength;
+                                pathElement.getBoundingClientRect(); // Tarayıcıyı yenile
+                                pathElement.style.animation = "drawRoute 2.5s ease-out forwards";
+                            }
+                        }, 50);
+
+                        resultsDiv.innerHTML = `<span style="color:#00a8ff">Hedef bulundu: <b>${foundPOI.ad.toUpperCase()}</b>. Rota Çizildi! ✔️</span>`;
 
                     } catch(err) {
                         console.error("Rota Hatası:", err);
@@ -413,7 +429,7 @@
                 } else { datasets.push({ label: 'İbreli', data: [ibreli], backgroundColor: '#27ae60', borderRadius: 4 }); datasets.push({ label: 'Yapraklı', data: [yaprakli], backgroundColor: '#f39c12', borderRadius: 4 }); if(diger > 0) datasets.push({ label: 'Diğer', data: [diger], backgroundColor: '#8e44ad', borderRadius: 4 }); }
                 currentChart = new Chart(ctx, { type: 'bar', data: { labels: chartLabels, datasets: datasets }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, labels: {color: '#eee'} } }, scales: { x: { stacked: true, ticks: { color: '#eee', font: {size: 13, weight: 'bold'} }, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { color: '#bbb' }, grid: { color: 'rgba(255,255,255,0.05)' } } } } });
             } else {
-                var chartLabels = isNaN(eski) ? ['Mevcut Dönem'] : ['Önceki Dönem', 'Mevcut Dönem']; var chartData = isNaN(eski) ? [mevcut] : [eski, mevcut]; var chartColors = isNaN(eski) ? ['#2ecc71'] : ['#95a5a6', '#2ecc71']; 
+                var chartLabels = isNaN(eski) ? ['Mevcut Dönem'] : ['Önceki Dönem', 'Mevcut Dönem']; var chartData = isNaN(eski) ? [mevcut] : [eski, mevcut]; var chartColors = isNaN(eski) ? ['#00a8ff'] : ['#95a5a6', '#00a8ff']; 
                 currentChart = new Chart(ctx, { type: 'bar', data: { labels: chartLabels, datasets: [{ label: birim ? `Birim: ${birim}` : 'Değer', data: chartData, backgroundColor: chartColors, borderRadius: 8, barPercentage: 0.5 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { color: '#bbb', font: {size: 11} }, grid: { color: 'rgba(255,255,255,0.05)' } }, x: { ticks: { color: '#eee', font: {size: 13, weight: 'bold'} }, grid: { display: false } } } } });
             }
         }
