@@ -21,12 +21,13 @@
         .sidebar-powered { text-align: right; margin-top: 15px; font-size: 9px; color: #777; font-style: italic; }
         .sidebar-content { padding: 15px; flex-grow: 1; overflow-y: auto; }
 
+        /* ARAMA ÇUBUĞU VE BUTON (YEŞİLE DÖNDÜRÜLDÜ) */
         .search-container { margin-top: 15px; position: relative; display: flex; gap: 8px; }
         .search-input { flex-grow: 1; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 10px 15px; color: white; font-size: 13px; outline: none; transition: border 0.3s; }
-        .search-input:focus { border-color: #e74c3c; }
+        .search-input:focus { border-color: #2ecc71; }
         .search-input::placeholder { color: #888; }
-        .search-btn { background: #e74c3c; color: #fff; border: none; border-radius: 8px; padding: 0 15px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
-        .search-btn:hover { background: #c0392b; }
+        .search-btn { background: #2ecc71; color: #111; border: none; border-radius: 8px; padding: 0 15px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
+        .search-btn:hover { background: #27ae60; }
         .search-results { margin-top: 8px; font-size: 12px; color: #ccc; }
         
         .clear-route-btn { display: none; margin-top: 5px; width: 100%; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.3); color: #fff; padding: 6px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: bold; transition: 0.2s; }
@@ -47,7 +48,7 @@
         .trend-down { color: #e74c3c; font-size: 14px; }
         .trend-flat { color: #95a5a6; font-size: 14px; }
 
-        /* YENİ: BİNA VURGU ANİMASYONU (Kalp Atışı Efekti) */
+        /* BİNA VURGU ANİMASYONU (Kırmızı Kalp Atışı Efekti) */
         .highlight-building {
             animation: pulse-red 1.2s infinite alternate ease-in-out;
             pointer-events: none;
@@ -93,7 +94,7 @@
             
             <div class="search-container">
                 <input type="text" id="searchInput" class="search-input" placeholder="Lokanta, Tuvalet, Danışma ara..." onkeypress="handleKeyPress(event)">
-                <button class="search-btn" onclick="searchLocation()">Bul</button>
+                <button class="search-btn" onclick="searchLocation()">Ara</button>
             </div>
             <div id="searchResults" class="search-results"></div>
             <button id="clearRouteBtn" class="clear-route-btn" onclick="clearHighlight()">Vurguyu Temizle</button>
@@ -122,7 +123,6 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
-        // Saat Mantığı
         setInterval(() => {
             const now = new Date();
             const days = ["PAZAR", "PAZARTESİ", "SALI", "ÇARŞAMBA", "PERŞEMBE", "CUMA", "CUMARTESİ"];
@@ -133,8 +133,7 @@
 
         proj4.defs("EPSG:5254", "+proj=tmerc +lat_0=0 +lon_0=30 +k=1 +x_0=500000 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs");
 
-        // KİOSK KOORDİNATLARI
-        var rawKioskCoords = [421029.4472, 4556083.3033]; // X, Y
+        var rawKioskCoords = [421029.4472, 4556083.3033]; 
         var transformedKiosk = proj4("EPSG:5254", "EPSG:4326", rawKioskCoords);
         var kioskLatLng = L.latLng(transformedKiosk[1], transformedKiosk[0]);
         
@@ -143,15 +142,14 @@
         var kioskIcon = L.divIcon({ html: '<div style="background-color:#3498db; width:16px; height:16px; border-radius:50%; border:3px solid white; box-shadow:0 0 10px rgba(0,0,0,0.5);"></div>', className: '', iconSize: [22, 22], iconAnchor: [11, 11] });
         L.marker(kioskLatLng, {icon: kioskIcon}).addTo(map).bindPopup("<b style='color:#3498db'>Şu An Buradasınız (Kiosk)</b>").openPopup();
 
-        var aktifVurgu = null; // Haritadaki mevcut kırmızı şekli tutar
+        var aktifVurgu = null;
 
-        // BİNA KOORDİNAT VERİTABANI (Hem Polygon hem Point destekler)
         var rawPoiListesi = [
             { 
                 ad: "tuvalet", 
-                tip: "polygon", // Sınırları belli olan binalar için
+                tip: "polygon", 
                 coords: [
-                    [420944.7015, 4555949.0085], // X, Y (Kural: Türkiye'de küçük olan X'tir)
+                    [420944.7015, 4555949.0085], 
                     [420953.7871, 4555942.5953],
                     [420939.1770, 4555922.0605],
                     [420929.9926, 4555928.9925]
@@ -161,12 +159,11 @@
             { ad: "danışma", tip: "point", x: 420952.2674, y: 4556029.0993 }
         ];
 
-        // Verileri Leaflet'in anlayacağı Enlem/Boylam (WGS84) formatına çevir
         var poiListesi = rawPoiListesi.map(poi => {
             if (poi.tip === "polygon") {
                 var latLngs = poi.coords.map(c => {
                     var trans = proj4("EPSG:5254", "EPSG:4326", [c[0], c[1]]);
-                    return [trans[1], trans[0]]; // [Lat, Lng]
+                    return [trans[1], trans[0]]; 
                 });
                 return { ad: poi.ad, tip: "polygon", latLngs: latLngs };
             } else {
@@ -180,43 +177,43 @@
         function searchLocation() {
             var searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
             var resultsDiv = document.getElementById('searchResults');
-            if (searchTerm.length < 2) { resultsDiv.innerHTML = "En az 2 harf girin."; return; }
+            
+            if (searchTerm.length < 2) { 
+                resultsDiv.innerHTML = "En az 2 harf girin."; 
+                return; 
+            }
 
             var foundPOI = poiListesi.find(poi => poi.ad.includes(searchTerm));
 
             if (foundPOI) {
-                // Önceki kırmızı şekli sil
+                // Başarılı aramada yazıyı tamamen sil
+                resultsDiv.innerHTML = ""; 
+
                 if (aktifVurgu) map.removeLayer(aktifVurgu);
 
                 if (foundPOI.tip === "polygon") {
-                    // POLİGON (ÇOKGEN) ÇİZİMİ VE ANİMASYONU
                     aktifVurgu = L.polygon(foundPOI.latLngs, {
                         color: '#e74c3c',
                         fillColor: '#e74c3c',
-                        className: 'highlight-building' // Kalp atışı CSS animasyonunu tetikler
+                        className: 'highlight-building' 
                     }).addTo(map);
                     
                     aktifVurgu.bindPopup("<b style='color:#e74c3c'>" + foundPOI.ad.toUpperCase() + "</b>").openPopup();
-                    
-                    // SİNEMATİK UÇUŞ (FLYTO) - Binayı ve çevresini ekrana tam oturtur
                     map.flyToBounds(aktifVurgu.getBounds(), { padding: [80, 80], maxZoom: 19.5, duration: 2.5 });
                     
                 } else {
-                    // TEK NOKTA (POINT) İSE YUVARLAK BİR VURGU AT
                     aktifVurgu = L.circleMarker([foundPOI.lat, foundPOI.lng], {
                         radius: 12, color: '#e74c3c', fillColor: '#e74c3c', className: 'highlight-building'
                     }).addTo(map);
                     
                     aktifVurgu.bindPopup("<b style='color:#e74c3c'>" + foundPOI.ad.toUpperCase() + "</b>").openPopup();
-                    
-                    // Noktaya uçuş yap
                     map.flyTo([foundPOI.lat, foundPOI.lng], 19.5, { duration: 2.5 });
                 }
 
                 document.getElementById('clearRouteBtn').style.display = 'block';
-                resultsDiv.innerHTML = `<span style="color:#e74c3c">Hedef bulundu: <b>${foundPOI.ad.toUpperCase()}</b></span>`;
 
             } else {
+                // Sadece bulunamazsa uyarı ver
                 resultsDiv.innerHTML = `<span style="color:#aaa">Konum bulunamadı.</span>`;
             }
         }
@@ -229,12 +226,9 @@
             document.getElementById('searchInput').value = "";
             document.getElementById('searchResults').innerHTML = "";
             document.getElementById('clearRouteBtn').style.display = 'none';
-            
-            // Kioska Dron Gibi Geri Uç
             map.flyTo(kioskLatLng, 18, { duration: 2 });
         }
 
-        // --- EXCEL AĞAÇ VERİLERİNİ YÜKLEME ---
         var globalAnaKatman; 
         var markers = L.markerClusterGroup({ showCoverageOnHover: false, maxClusterRadius: 35, disableClusteringAtZoom: 40 });
 
@@ -286,7 +280,6 @@
             }
         });
 
-        // GRAFİK MANTIĞI
         var currentChart = null;
         function openChart(event, element) {
             var baslik = element.getAttribute('data-baslik'); var mevcut = parseFloat(element.getAttribute('data-mevcut')); var eski = parseFloat(element.getAttribute('data-eski')); var birim = element.getAttribute('data-birim'); var ibreli = parseInt(element.getAttribute('data-ibreli')) || 0; var yaprakli = parseInt(element.getAttribute('data-yaprakli')) || 0;
