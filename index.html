@@ -126,9 +126,9 @@
         var transformedKiosk = proj4("EPSG:5254", "EPSG:4326", rawKioskCoords);
         var kioskLatLng = L.latLng(transformedKiosk[1], transformedKiosk[0]);
         
-        // SIFIR SARSINTI İÇİN CANVAS MOTORU
+        // SINIRSIZ KAYDIRMA İÇİN GENİŞLETİLMİŞ CANVAS MOTORU
         var map = L.map('map', { 
-            preferCanvas: true, 
+            renderer: L.canvas({ padding: 3.0 }), // Ekranın %300 dışına kadar her şeyi hazırda çizer!
             zoomControl: false, 
             attributionControl: false, 
             minZoom: 12, 
