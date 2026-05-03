@@ -13,7 +13,6 @@
         body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; }
         #map { height: 100vh; width: 100vw; background-color: #161616; z-index: 1; }
 
-        /* SOL PANEL */
         .sidebar { position: fixed; top: 20px; left: 15px; bottom: 20px; width: 310px; background-color: rgba(40, 40, 40, 0.70); backdrop-filter: blur(15px) saturate(180%); -webkit-backdrop-filter: blur(15px) saturate(180%); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; color: #e0e0e0; z-index: 1000; display: flex; flex-direction: column; box-sizing: border-box; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); }
         .sidebar-header { padding: 25px 20px 20px 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); background-color: rgba(0, 0, 0, 0.2); border-radius: 20px 20px 0 0; }
         .sidebar-title { margin: 0; font-size: 24px; font-weight: 700; color: #ffffff; letter-spacing: 0.5px; }
@@ -22,7 +21,6 @@
         .sidebar-powered { text-align: right; margin-top: 15px; font-size: 9px; color: #777; font-style: italic; }
         .sidebar-content { padding: 15px; flex-grow: 1; overflow-y: auto; }
 
-        /* ARAMA ÇUBUĞU */
         .search-container { margin-top: 15px; position: relative; display: flex; gap: 8px; }
         .search-input { flex-grow: 1; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 10px 15px; color: white; font-size: 13px; outline: none; transition: border 0.3s; }
         .search-input:focus { border-color: #2ecc71; }
@@ -34,12 +32,10 @@
         .clear-route-btn { display: none; margin-top: 5px; width: 100%; background: rgba(231, 76, 60, 0.2); border: 1px solid rgba(231, 76, 60, 0.4); color: #e74c3c; padding: 6px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: bold; transition: 0.2s; }
         .clear-route-btn:hover { background: rgba(231, 76, 60, 0.4); }
 
-        /* SAĞ ÜST DİJİTAL SAAT WIDGET'I */
         .top-clock-container { position: fixed; top: 20px; right: 20px; background-color: rgba(40, 40, 40, 0.70); backdrop-filter: blur(15px) saturate(180%); -webkit-backdrop-filter: blur(15px) saturate(180%); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 10px 14px; z-index: 1000; display: flex; flex-direction: column; align-items: center; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4); pointer-events: none; }
         .time-text { font-size: 22px; font-weight: 700; letter-spacing: 1px; color: #2ecc71; line-height: 1; font-family: 'Segoe UI', monospace; text-align: center; }
         .date-text { font-size: 8.5px; font-weight: 600; color: #bbb; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.2px; text-align: center; }
 
-        /* EXCEL KUTULARI */
         .excel-kutu-container { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 15px; }
         .veri-kutusu { background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 12px; text-align: center; position: relative; cursor: pointer; transition: transform 0.2s, background 0.2s; }
         .veri-kutusu:hover { background: rgba(255, 255, 255, 0.08); }
@@ -51,15 +47,14 @@
         .trend-down { color: #e74c3c; font-size: 14px; }
         .trend-flat { color: #95a5a6; font-size: 14px; }
 
-        /* LAZER ANİMASYONU */
+        /* YILAN ROTA ANİMASYONU */
         .routing-line {
-            stroke-dasharray: 15, 15;
+            stroke-dasharray: 40, 15;
             animation: dashMove 1s linear infinite;
             filter: drop-shadow(0px 0px 6px rgba(46, 204, 113, 0.9));
         }
-        @keyframes dashMove { to { stroke-dashoffset: -30; } }
+        @keyframes dashMove { to { stroke-dashoffset: -55; } }
 
-        /* iOS MODALI VE DİĞERLERİ */
         #iosModal { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.4); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 9999; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s ease; }
         #iosModal.show { opacity: 1; }
         #iosModalContent { width: 90%; max-width: 700px; height: 450px; background: rgba(30, 30, 30, 0.85); border-radius: 24px; border: 1px solid rgba(255,255,255,0.15); padding: 25px; box-shadow: 0 25px 50px rgba(0,0,0,0.5); transform: scale(0); opacity: 0; transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.2), opacity 0.4s ease; position: relative; display: flex; flex-direction: column; }
@@ -134,10 +129,9 @@
             document.getElementById('liveDate').innerText = `${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()} | ${days[now.getDay()]}`;
         }, 1000);
 
-        // PROJ4JS Tanımlamaları
         proj4.defs("EPSG:5254", "+proj=tmerc +lat_0=0 +lon_0=30 +k=1 +x_0=500000 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs");
 
-        // --- VERDİĞİNİZ KİOSK KOORDİNATLARI ---
+        // --- VERDİĞİNİZ KİOSK VE POI KOORDİNATLARI ---
         var rawKioskCoords = [421029.4472, 4556083.3033]; // Kiosk: X, Y
         var transformedKiosk = proj4("EPSG:5254", "EPSG:4326", rawKioskCoords);
         var kioskLatLng = L.latLng(transformedKiosk[1], transformedKiosk[0]);
@@ -147,7 +141,18 @@
         var kioskIcon = L.divIcon({ html: '<div style="background-color:#e74c3c; width:16px; height:16px; border-radius:50%; border:3px solid white; box-shadow:0 0 10px rgba(0,0,0,0.5);"></div>', className: '', iconSize: [22, 22], iconAnchor: [11, 11] });
         L.marker(kioskLatLng, {icon: kioskIcon}).addTo(map).bindPopup("<b style='color:#e74c3c'>Şu An Buradasınız</b>").openPopup();
 
-        // --- KODA GÖMÜLÜ GEOJSON YOL VERİLERİ (SIFIR GECİKME) ---
+        var rawPoiListesi = [
+            { ad: "lokanta", x: 420962.2129, y: 4556130.5068 },
+            { ad: "tuvalet", x: 421041.2371, y: 4555967.8822 },
+            { ad: "danışma", x: 420952.2674, y: 4556029.0993 }
+        ];
+
+        var poiListesi = rawPoiListesi.map(poi => {
+            var trans = proj4("EPSG:5254", "EPSG:4326", [poi.x, poi.y]);
+            return { ad: poi.ad, lat: trans[1], lng: trans[0] };
+        });
+
+        // --- GÖMÜLÜ AĞ VE AUTO-SNAP (OTOMATİK BİRLEŞTİRME) ---
         var yollarGeoJSON = {
             "type": "FeatureCollection",
             "name": "entities",
@@ -168,35 +173,33 @@
         var agDugumleri = {}; 
         var cizilenRotaCizgisi = null; 
         var hedefSimgesi = null;
+        var dugumListesi = []; // Auto-Snap (Otomatik Yakalama) havuzu
 
-        // VERDİĞİNİZ BİNA KOORDİNATLARI (NetCAD EPSG:5254)
-        var rawPoiListesi = [
-            { ad: "lokanta", x: 420962.2129, y: 4556130.5068 },
-            { ad: "tuvalet", x: 421041.2371, y: 4555967.8822 },
-            { ad: "danışma", x: 420952.2674, y: 4556029.0993 }
-        ];
+        // AUTO-SNAP MOTORU: Birbirine yakın çizgi uçlarını lehimler
+        function dugumYakala(lat, lng) {
+            var targetLatLng = L.latLng(lat, lng);
+            for(var i=0; i<dugumListesi.length; i++) {
+                // 5 metreden yakınsa, eski düğümün ID'sini döndür (Çizgiler birleşir)
+                if (map.distance(targetLatLng, dugumListesi[i].latLng) <= 5.0) {
+                    return dugumListesi[i].id;
+                }
+            }
+            // Değilse yeni düğüm yarat
+            var newId = `${lat.toFixed(6)},${lng.toFixed(6)}`;
+            dugumListesi.push({id: newId, latLng: targetLatLng});
+            return newId;
+        }
 
-        var poiListesi = rawPoiListesi.map(poi => {
-            var trans = proj4("EPSG:5254", "EPSG:4326", [poi.x, poi.y]);
-            return { ad: poi.ad, lat: trans[1], lng: trans[0] };
-        });
-
-        // AKILLI KOORDİNAT ÇEVİRİCİ
+        // AKILLI ÇEVİRİCİ
         function parseGeoJsonCoord(coordArray) {
-            var a = parseFloat(coordArray[0]); 
-            var b = parseFloat(coordArray[1]);
+            var a = parseFloat(coordArray[0]); var b = parseFloat(coordArray[1]);
             if (isNaN(a) || isNaN(b)) return null;
-            
-            // Eğer veri zaten WGS84 (Örn: 29.05, 41.13) gelmişse elleme!
-            if (a < 180 && b < 180) { return [a, b]; }
-            
-            // Eğer EPSG:5254 milyonluk NetCAD formatı gelirse:
-            var x = (a < b) ? a : b; 
-            var y = (a > b) ? a : b;
+            if (a < 180 && b < 180) { return [a, b]; } // Veri zaten Lng/Lat
+            var x = (a < b) ? a : b; var y = (a > b) ? a : b;
             return proj4("EPSG:5254", "EPSG:4326", [x, y]); 
         }
 
-        // AĞI SAYFA AÇILIR AÇILMAZ KODA GÖMÜLÜ VERİDEN KUR
+        // AĞ KURULUMU (Lehimleme devrede)
         if (yollarGeoJSON.features && yollarGeoJSON.features.length > 0) {
             yollarGeoJSON.features.forEach(feature => {
                 if (feature.geometry.type === "LineString" || feature.geometry.type === "MultiLineString") {
@@ -207,20 +210,23 @@
                             var p2 = parseGeoJsonCoord(line[i+1]);
                             if (!p1 || !p2) continue;
 
-                            var n1 = `${p1[1].toFixed(6)},${p1[0].toFixed(6)}`;
-                            var n2 = `${p2[1].toFixed(6)},${p2[0].toFixed(6)}`;
+                            var n1 = dugumYakala(p1[1], p1[0]); // SNAP!
+                            var n2 = dugumYakala(p2[1], p2[0]); // SNAP!
                             var dist = map.distance(L.latLng(p1[1], p1[0]), L.latLng(p2[1], p2[0]));
 
                             if (!agDugumleri[n1]) agDugumleri[n1] = [];
                             if (!agDugumleri[n2]) agDugumleri[n2] = [];
                             
-                            agDugumleri[n1].push({ hedef: n2, mesafe: dist });
-                            agDugumleri[n2].push({ hedef: n1, mesafe: dist });
+                            // Kendine bağlamasını engelle
+                            if(n1 !== n2) {
+                                agDugumleri[n1].push({ hedef: n2, mesafe: dist });
+                                agDugumleri[n2].push({ hedef: n1, mesafe: dist });
+                            }
                         }
                     });
                 }
             });
-            console.log("Gizli Ağ Koda Gömülü Veriden Kuruldu! Toplam Düğüm:", Object.keys(agDugumleri).length);
+            console.log("Topoloji Düzeltildi! Ağ Kuruldu. Toplam Birleşik Düğüm:", Object.keys(agDugumleri).length);
         }
 
         function enYakinDugumBul(latlng) {
@@ -233,7 +239,6 @@
             return enYakin;
         }
 
-        // DÖNGÜ KİLİTLİ (GÜVENLİ) DIJKSTRA
         function dijkstra(baslangicDugumu, bitisDugumu) {
             if (!baslangicDugumu || !bitisDugumu) return null; 
             var mesafeler = {}; var onceki = {}; var islenecekler = [];
@@ -243,7 +248,7 @@
             var loopCount = 0;
             while (islenecekler.length > 0) {
                 loopCount++;
-                if (loopCount > 15000) break; // Tarayıcıyı dondurmamak için güvenlik limiti
+                if (loopCount > 15000) break; 
 
                 var minIndex = 0;
                 for (var i = 1; i < islenecekler.length; i++) {
@@ -299,7 +304,7 @@
                         }
 
                         cizilenRotaCizgisi = L.polyline(yolKordinatlari, {
-                            color: '#2ecc71', weight: 6, opacity: 0.9, dashArray: '15, 15', lineJoin: 'round', className: 'routing-line' 
+                            color: '#2ecc71', weight: 6, opacity: 0.9, lineJoin: 'round', className: 'routing-line' 
                         }).addTo(map);
 
                         hedefSimgesi = L.marker(hedefLatLng, {
