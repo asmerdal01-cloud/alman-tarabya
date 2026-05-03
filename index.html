@@ -22,17 +22,17 @@
         .sidebar-powered { text-align: right; margin-top: 15px; font-size: 9px; color: #777; font-style: italic; }
         .sidebar-content { padding: 15px; flex-grow: 1; overflow-y: auto; }
 
-        /* SAĞ ÜST DİJİTAL SAAT WIDGET'I (BOYUTLARI KÜÇÜLTÜLDÜ) */
+        /* SAĞ ÜST DİJİTAL SAAT WIDGET'I (KÜÇÜLTÜLDÜ VE SIKIŞTIRILDI) */
         .top-clock-container {
             position: fixed; top: 20px; right: 20px;
             background-color: rgba(40, 40, 40, 0.70); backdrop-filter: blur(15px) saturate(180%); -webkit-backdrop-filter: blur(15px) saturate(180%);
-            border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 15px;
-            padding: 12px 18px; /* Kutu boşlukları daraltıldı */
-            z-index: 1000; display: flex; flex-direction: column; align-items: flex-end;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); pointer-events: none;
+            border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px;
+            padding: 10px 14px; /* Kutu genel olarak küçültüldü */
+            z-index: 1000; display: flex; flex-direction: column; align-items: center; /* Merkezi hizalama yapıldı */
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4); pointer-events: none;
         }
-        .time-text { font-size: 26px; /* 36px'ten 26px'e düşürüldü */ font-weight: 700; letter-spacing: 1.5px; color: #2ecc71; line-height: 1; font-family: 'Segoe UI', monospace; }
-        .date-text { font-size: 9.5px; /* 11px'ten 9.5px'e düşürüldü */ font-weight: 600; color: #bbb; margin-top: 6px; text-transform: uppercase; letter-spacing: 1.5px; }
+        .time-text { font-size: 22px; font-weight: 700; letter-spacing: 1px; color: #2ecc71; line-height: 1; font-family: 'Segoe UI', monospace; text-align: center; }
+        .date-text { font-size: 8.5px; font-weight: 600; color: #bbb; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.2px; text-align: center; } /* Harf aralığı sıkıştırıldı */
 
         /* EXCEL VERİ KUTULARI */
         .excel-kutu-container { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 5px; }
