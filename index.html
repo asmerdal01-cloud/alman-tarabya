@@ -101,12 +101,13 @@
             })
             .catch(err => console.error("GeoJSON yüklenemedi:", err));
 
-        // Veri temizleme fonksiyonu (Tırnak ve virgül sorunları için)
+        // Veri temizleme fonksiyonu (Virgül ve tırnak hatalarına karşı kalkanımız)
         function cleanData(val) {
             if(!val) return "0";
             return val.toString().replace(/"/g, '').replace(/ /g, '').replace(',', '.');
         }
 
+        // KENDI LINKINIZI BURAYA YAPIŞTIRIN (GID numarasının doğru sayfaya ait olduğundan emin olun)
         var csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQgLRxnEhblACdZ6LTb4NINI8RwcLotC6j-h9AxTm1C0SffFWel0PnzOoUWE1Jh9tC1EUOWhGQE4gow/pub?gid=942754741&single=true&output=csv";
 
         Papa.parse(csvUrl, {
@@ -122,16 +123,20 @@
                     for (var i = 1; i < veriler.length; i++) {
                         var satir = veriler[i];
                         
-                        // Dosya yapısına göre: H=7 (Enlem), I=8 (Boylam), F=5 (Simge Boyutu)
+                        // H=7 (Enlem), I=8 (Boylam), F=5 (Simge Boyutu)
                         var lat = parseFloat(cleanData(satir[7])); 
                         var lng = parseFloat(cleanData(satir[8])); 
                         var size = parseFloat(cleanData(satir[5])) || 8; 
 
-                        if (!isNaN(lat) && !isNaN(lng)) {
+                        if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
                             var popupHTML = "<div style='min-width:180px'><h3 class='agac-popup-baslik'>Biyometrik Analiz</h3>";
-                            // Görünmesini istediğiniz popup sütunları: ID, Tür, Latince, Çap, Boy, Tepe Çapı, Yaş
-                            [0,1,2,3,4,5,6].forEach(idx => {
-                                if(satir[idx]) popupHTML += `<div class="agac-popup-satir"><span>${basliklar[idx]}</span><span style="font-weight:600">${satir[idx]}</span></div>`;
+                            
+                            // Popup'ta görünecekler: A'dan G'ye kadar (0-6) VE J sütunu (9 - Mevcut CO2 ağaç Stoku)
+                            [0, 1, 2, 3, 4, 5, 6, 9].forEach(idx => {
+                                if(satir[idx] && satir[idx].toString().trim() !== "") {
+                                    var baslikAdi = basliklar[idx] ? basliklar[idx] : `Veri ${idx}`;
+                                    popupHTML += `<div class="agac-popup-satir"><span>${baslikAdi}</span><span style="font-weight:600">${satir[idx]}</span></div>`;
+                                }
                             });
                             popupHTML += "</div>";
 
@@ -149,13 +154,13 @@
                     }
                     map.addLayer(markers);
 
-                    // Sabit Panel Verileri (K, L, M, N, O, P sütunları -> İndeks 10-15)
+                    // Sabit Panel Verileri (Yeni Görsele Göre: K, L, M, N, O, P sütunları -> İndeks 10-15)
                     var panelSutunlari = [10, 11, 12, 13, 14, 15]; 
                     var sonGuncelVeri = null;
                     
-                    // Verisi dolu olan son satırı bul (Genelde ilk satırda özet verileriniz var)
+                    // K sütununda (10. indeks) veri olan satırı bul (Sizin tabloda 2. satır yani indeks 1)
                     for (var j = veriler.length - 1; j >= 1; j--) {
-                        if (veriler[j][10] && veriler[j][10].trim() !== "") {
+                        if (veriler[j][10] && veriler[j][10].toString().trim() !== "") {
                             sonGuncelVeri = veriler[j];
                             break;
                         }
@@ -164,11 +169,14 @@
                     if (sonGuncelVeri) {
                         var html = '<div class="excel-kutu-container">';
                         panelSutunlari.forEach(index => {
-                            var val = sonGuncelVeri[index] ? sonGuncelVeri[index] : "0";
-                            html += `<div class="veri-kutusu"><div class="veri-baslik">${basliklar[index]}</div><div class="veri-deger">${val}</div></div>`;
+                            var baslikAdi = basliklar[index] ? basliklar[index] : `-`;
+                            var val = (sonGuncelVeri[index] && sonGuncelVeri[index].toString().trim() !== "") ? sonGuncelVeri[index] : "0";
+                            html += `<div class="veri-kutusu"><div class="veri-baslik">${baslikAdi}</div><div class="veri-deger">${val}</div></div>`;
                         });
                         html += '</div>';
                         document.getElementById('excel-verileri').innerHTML = html;
+                    } else {
+                        document.getElementById('excel-verileri').innerHTML = "<div style='color:#ffaa00; text-align:center; padding:20px; font-size:12px;'>Panel verileri bulunamadı.</div>";
                     }
                 }
             }
