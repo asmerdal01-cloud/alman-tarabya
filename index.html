@@ -14,7 +14,17 @@
         #map { height: 100vh; width: 100vw; background-color: #161616; z-index: 1; }
 
         .sidebar { position: fixed; top: 20px; left: 15px; bottom: 20px; width: 310px; background-color: rgba(40, 40, 40, 0.70); backdrop-filter: blur(15px) saturate(180%); -webkit-backdrop-filter: blur(15px) saturate(180%); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; color: #e0e0e0; z-index: 1000; display: flex; flex-direction: column; box-sizing: border-box; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); }
-        .sidebar-header { padding: 25px 20px 15px 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); background-color: rgba(0, 0, 0, 0.2); }
+        
+        /* CANLI BAĞLANTI VE SAAT TASARIMLARI EKLENDİ */
+        .sidebar-header { position: relative; padding: 25px 20px 15px 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); background-color: rgba(0, 0, 0, 0.2); }
+        
+        .live-badge { position: absolute; top: 20px; right: 20px; display: flex; align-items: center; gap: 6px; background: rgba(231, 76, 60, 0.15); border: 1px solid rgba(231, 76, 60, 0.4); padding: 4px 8px; border-radius: 20px; font-size: 9px; font-weight: bold; color: #e74c3c; letter-spacing: 1px; }
+        .live-dot { width: 6px; height: 6px; background-color: #e74c3c; border-radius: 50%; animation: blink 1.5s infinite; }
+        @keyframes blink { 0% { opacity: 1; box-shadow: 0 0 6px #e74c3c; } 50% { opacity: 0.2; box-shadow: none; } 100% { opacity: 1; box-shadow: 0 0 6px #e74c3c; } }
+        
+        .clock-text { font-family: monospace; font-size: 11px; color: #bbb; margin-top: 8px; font-weight: bold; letter-spacing: 0.5px; display: flex; align-items: center; gap: 5px;}
+        /* ------------------------------------------- */
+
         .sidebar-title { margin: 0; font-size: 24px; font-weight: 700; color: #ffffff; letter-spacing: 0.5px; }
         .sidebar-location { margin: 4px 0 0 0; font-size: 13px; font-weight: 600; color: #ffffff; opacity: 0.8; }
         .sidebar-subtitle { margin: 12px 0 0 0; font-size: 9.5px; color: #2ecc71; text-transform: uppercase; letter-spacing: 0.8px; line-height: 1.4; font-weight: 700; }
@@ -22,7 +32,6 @@
         .sidebar-content { padding: 15px; flex-grow: 1; overflow-y: auto; }
 
         .excel-kutu-container { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 5px; }
-        
         .veri-kutusu { background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 12px; text-align: center; position: relative; cursor: pointer; transition: transform 0.2s cubic-bezier(0.25, 0.8, 0.25, 1), background 0.2s; }
         .veri-kutusu:hover { background: rgba(255, 255, 255, 0.08); }
         .veri-kutusu:active { transform: scale(0.92); }
@@ -70,9 +79,16 @@
 
     <div class="sidebar">
         <div class="sidebar-header">
-            <div class="sidebar-title">Project SenTree</div>
+            <!-- CANLI ROZETİ -->
+            <div class="live-badge"><div class="live-dot"></div>CANLI</div>
+            
+            <div class="sidebar-title">PROJECT SENTREE</div>
             <div class="sidebar-location">📍ALMAN BÜYÜKELÇİLİĞİ - TARABYA</div>
             <p class="sidebar-subtitle">GIS TABANLI KENTSEL EKOSİSTEM HİZMETLERİ TAKİP SİSTEMİ</p>
+            
+            <!-- DİJİTAL SAAT -->
+            <div class="clock-text" id="liveClock">⏳ Sistem Bağlantısı Kuruluyor...</div>
+            
             <div class="sidebar-powered">Powered by CLIMERA Projects</div>
         </div>
         <div class="sidebar-content">
@@ -108,6 +124,15 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
+        // --- CANLI SAAT MANTIĞI ---
+        setInterval(() => {
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            const timeStr = now.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            document.getElementById('liveClock').innerHTML = `🗓️ ${dateStr} &nbsp;|&nbsp; 🕒 ${timeStr}`;
+        }, 1000);
+        // --------------------------
+
         proj4.defs("EPSG:5254", "+proj=tmerc +lat_0=0 +lon_0=30 +k=1 +x_0=500000 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs");
 
         var map = L.map('map', { zoomControl: false, attributionControl: false, minZoom: 12, maxZoom: 25, zoomSnap: 0.1, zoomDelta: 0.1 });
@@ -177,9 +202,6 @@
                     }
 
                     if (sonGuncelVeri) {
-                        
-                        // EXCEL'DEN DOĞRUDAN İBRELİ/YAPRAKLI SAYILARINI ÇEKİYORUZ
-                        // W Sütunu = 22. İndeks, X Sütunu = 23. İndeks
                         var ibreliSayisi = parseInt(sonGuncelVeri[22]) || 0;
                         var yaprakliSayisi = parseInt(sonGuncelVeri[23]) || 0;
 
@@ -203,7 +225,6 @@
                                 else trendIcon = "<span class='trend-flat' style='margin-left:5px;'>▬</span>"; 
                             }
 
-                            // Excel'den aldığımız ibreli/yaprakli sayılarını kutunun "data" attribute'larına ekledik
                             html += `
                             <div class="veri-kutusu" onclick="openChart(event, this)" 
                                  data-baslik="${baslikAdi}" data-mevcut="${mevcutSayi}" 
@@ -253,11 +274,8 @@
             var baslikKucuk = baslik.toLocaleLowerCase('tr-TR');
             var isTreeCount = baslikKucuk.includes("ağaç") || baslikKucuk.includes("agac");
 
-            // EĞER AĞAÇ SAYISI KUTUSUNA TIKLANDIYSA YIĞILMIŞ ÇUBUK (İBRELİ/YAPRAKLI) ÇİZİLİR
             if (isTreeCount && (ibreli > 0 || yaprakli > 0)) {
                 var chartLabels = isNaN(eski) ? ['Mevcut Dönem'] : ['Önceki Dönem', 'Mevcut Dönem'];
-                
-                // Tanımlanamayan/Diğer ağaçların hesabı
                 var diger = mevcut - (ibreli + yaprakli);
                 if (diger < 0) diger = 0;
 
@@ -287,7 +305,6 @@
                 });
 
             } else {
-                // DİĞER TÜM KUTULAR İÇİN STANDART ÇUBUK GRAFİK
                 var chartLabels = isNaN(eski) ? ['Mevcut Dönem'] : ['Önceki Dönem', 'Mevcut Dönem'];
                 var chartData = isNaN(eski) ? [mevcut] : [eski, mevcut];
                 var chartColors = isNaN(eski) ? ['#2ecc71'] : ['#95a5a6', '#2ecc71']; 
