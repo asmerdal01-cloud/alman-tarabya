@@ -47,15 +47,12 @@
         .trend-down { color: #e74c3c; font-size: 14px; }
         .trend-flat { color: #95a5a6; font-size: 14px; }
 
-        /* SARSINTI ÖNLEYİCİ KİLİT (Leaflet'in titremesini donanımsal olarak durdurur) */
-        .leaflet-overlay-pane svg {
-            will-change: transform;
-        }
+        .leaflet-overlay-pane svg { will-change: transform; }
 
-        /* GERİ DÖNEN ESKİ NEON ANİMASYONU */
+        /* NEON ANİMASYONU */
         .highlight-building {
             pointer-events: none;
-            filter: drop-shadow(0 0 12px rgba(231, 76, 60, 0.9)); /* O şık neon gölge geri geldi */
+            filter: drop-shadow(0 0 12px rgba(231, 76, 60, 0.9)); 
             animation: safe-pulse 1s infinite alternate ease-in-out;
         }
         @keyframes safe-pulse {
@@ -142,7 +139,7 @@
         var transformedKiosk = proj4("EPSG:5254", "EPSG:4326", rawKioskCoords);
         var kioskLatLng = L.latLng(transformedKiosk[1], transformedKiosk[0]);
         
-        // Canvas kapatıldı, orjinal SVG motoruna dönüldü (Binaların CSS efektleri çalışsın diye)
+        // BAŞLANGIÇ ZOOM SEVİYESİ 18'DEN 19'A ÇIKARTILDI
         var map = L.map('map', { 
             zoomControl: false, 
             attributionControl: false, 
@@ -150,9 +147,8 @@
             maxZoom: 25, 
             zoomSnap: 0.1, 
             zoomDelta: 0.1 
-        }).setView(kioskLatLng, 18);
+        }).setView(kioskLatLng, 19);
         
-        // Kiosk yazısı silindi, sadece Şu An Buradasınız
         var kioskIcon = L.divIcon({ html: '<div style="background-color:#3498db; width:16px; height:16px; border-radius:50%; border:3px solid white; box-shadow:0 0 10px rgba(0,0,0,0.5);"></div>', className: '', iconSize: [22, 22], iconAnchor: [11, 11] });
         L.marker(kioskLatLng, {icon: kioskIcon}).addTo(map).bindPopup("<b style='color:#3498db'>Şu An Buradasınız</b>").openPopup();
 
@@ -200,7 +196,7 @@
             var foundPOIs = poiListesi.filter(poi => poi.ad.includes(searchTerm));
 
             if (foundPOIs.length > 0) {
-                resultsDiv.innerHTML = ""; // Hedef bulundu bildirimini silme
+                resultsDiv.innerHTML = ""; 
                 aktifVurgularKatmani.clearLayers();
 
                 foundPOIs.forEach(poi => {
@@ -214,7 +210,6 @@
                             radius: 12, color: '#e74c3c', fillColor: '#e74c3c', weight: 2, className: 'highlight-building'
                         });
                     }
-                    // Pop-up iptal, sadece şekil eklenecek
                     aktifVurgularKatmani.addLayer(vurgu);
                 });
 
@@ -222,7 +217,7 @@
                 document.getElementById('clearRouteBtn').style.display = 'block';
 
             } else {
-                resultsDiv.innerHTML = `<span style="color:#aaa">Konum bulunamadı.</span>`; // Sadece bulunamazsa uyarı var
+                resultsDiv.innerHTML = `<span style="color:#aaa">Konum bulunamadı.</span>`;
             }
         }
 
@@ -231,7 +226,8 @@
             document.getElementById('searchInput').value = "";
             document.getElementById('searchResults').innerHTML = "";
             document.getElementById('clearRouteBtn').style.display = 'none';
-            map.flyTo(kioskLatLng, 18, { duration: 2 });
+            // YUVAYA DÖNÜŞ ZOOM SEVİYESİ DE 19'A ÇIKARTILDI
+            map.flyTo(kioskLatLng, 19, { duration: 2 });
         }
 
         var globalAnaKatman; 
@@ -239,7 +235,7 @@
             showCoverageOnHover: false, 
             maxClusterRadius: 35, 
             disableClusteringAtZoom: 40,
-            chunkedLoading: true // Ağaçların sistemi dondurmasını engellemek için bu ayar korundu
+            chunkedLoading: true 
         });
 
         fetch('veri.geojson').then(response => response.json()).then(data => {
@@ -314,7 +310,7 @@
         }
         function closeChart() { document.getElementById('iosModal').classList.remove('show'); setTimeout(() => { document.getElementById('iosModal').style.display = 'none'; }, 400); }
         
-        // --- 15 SANİYE KURALI (EKRAN BOŞTA KALIRSA SIFIRLAR) ---
+        // --- 15 SANİYE KURALI ---
         var idleTimer; 
         function resetInteraction() { 
             clearHighlight(); 
@@ -333,17 +329,7 @@
         
         handleInteraction();
 
-        // --- 60 SANİYEDE BİR DRON KAMERASIYLA EKRAN KORUYUCU ŞOVU ---
-        setInterval(() => {
-            if (aktifVurgularKatmani.getLayers().length === 0 && globalAnaKatman) {
-                map.flyToBounds(globalAnaKatman.getBounds(), { padding: [50, 50], duration: 3.5 });
-                setTimeout(() => {
-                    if (aktifVurgularKatmani.getLayers().length === 0) {
-                        map.flyTo(kioskLatLng, 18, { duration: 3.5 });
-                    }
-                }, 8000);
-            }
-        }, 60000); 
+        // (İPTAL EDİLDİ) 60 Saniyelik Ekran Koruyucu Turu Kaldırıldı. Artık kiosk daha sabit duracak.
 
     </script>
 </body>
