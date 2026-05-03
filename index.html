@@ -75,10 +75,14 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
     <script>
-        // Harita Başlangıç Kurulumu
+        // İŞTE HAYAT KURTARAN MAXZOOM EKLENTİSİ BURADA!
         var map = L.map('map', { 
-            zoomControl: false, attributionControl: false, 
-            minZoom: 12, maxZoom: 19, zoomSnap: 0.1, zoomDelta: 0.1
+            zoomControl: false, 
+            attributionControl: false, 
+            minZoom: 12, 
+            maxZoom: 19, // <-- Hatanızı çözen satır
+            zoomSnap: 0.1, 
+            zoomDelta: 0.1
         });
 
         var globalAnaKatman; 
@@ -123,7 +127,7 @@
                         var lng = parseFloat(satir[8] ? satir[8].toString().replace(',', '.') : "NaN"); 
                         
                         var simgeBoyutu = parseFloat(satir[5] ? satir[5].toString().replace(',', '.') : "8");
-                        if (isNaN(simgeBoyutu) || simgeBoyutu <= 0) simgeBoyutu = 8; // F sütunu boşsa varsayılan boyut
+                        if (isNaN(simgeBoyutu) || simgeBoyutu <= 0) simgeBoyutu = 8;
 
                         if (!isNaN(lat) && !isNaN(lng)) {
                             var popupHTML = "<div style='min-width:180px'><h3 class='agac-popup-baslik'>Biyometrik Analiz</h3>";
@@ -149,7 +153,6 @@
                     var sonGuncelVeri = null;
                     
                     for (var j = veriler.length - 1; j >= 1; j--) {
-                        // K sütununda veri olup olmadığını kontrol et
                         if (veriler[j] && veriler[j][10] && veriler[j][10].toString().trim() !== "") {
                             sonGuncelVeri = veriler[j];
                             break;
