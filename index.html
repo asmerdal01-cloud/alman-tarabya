@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SenTree - EPSG:5254 Koordinat Sistemi</title>
+    <title>SenTree - Değişim Okları</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
@@ -13,7 +13,8 @@
         body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; }
         #map { height: 100vh; width: 100vw; background-color: #161616; z-index: 1; }
 
-        .sidebar { position: fixed; top: 20px; left: 15px; bottom: 20px; width: 310px; background-color: rgba(40, 40, 40, 0.70); backdrop-filter: blur(15px) saturate(180%); -webkit-backdrop-filter: blur(15px) saturate(180%); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; color: #e0e0e0; z-index: 1000; display: flex; flex-direction: column; box-sizing: border-box; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); }
+        /* Panel Parlaklığı Bir Tık Artırıldı (30,30,30,0.65 -> 60,60,60,0.75) */
+        .sidebar { position: fixed; top: 20px; left: 15px; bottom: 20px; width: 310px; background-color: rgba(60, 60, 60, 0.75); backdrop-filter: blur(15px) saturate(180%); -webkit-backdrop-filter: blur(15px) saturate(180%); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; color: #e0e0e0; z-index: 1000; display: flex; flex-direction: column; box-sizing: border-box; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); }
         .sidebar-header { padding: 25px 20px 15px 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); background-color: rgba(0, 0, 0, 0.2); }
         .sidebar-title { margin: 0; font-size: 24px; font-weight: 700; color: #ffffff; letter-spacing: 0.5px; }
         .sidebar-location { margin: 4px 0 0 0; font-size: 13px; font-weight: 600; color: #ffffff; opacity: 0.8; }
@@ -22,9 +23,17 @@
         .sidebar-content { padding: 15px; flex-grow: 1; overflow-y: auto; }
 
         .excel-kutu-container { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 5px; }
-        .veri-kutusu { background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 12px; text-align: center; }
+        .veri-kutusu { background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 12px; text-align: center; position: relative; }
         .veri-baslik { font-size: 10px; color: #999; text-transform: uppercase; margin-bottom: 6px; }
+        
+        /* Değer ve Ok için yeni hizalama */
+        .veri-deger-container { display: flex; align-items: center; justify-content: center; gap: 6px; }
         .veri-deger { font-size: 16px; font-weight: 600; color: #ffffff; }
+        
+        /* Ok Simgeleri için Stiller */
+        .trend-up { color: #2ecc71; font-size: 14px; }
+        .trend-down { color: #e74c3c; font-size: 14px; }
+        .trend-flat { color: #95a5a6; font-size: 14px; }
 
         .marker-cluster-small { background-color: rgba(46, 204, 113, 0.6); }
         .marker-cluster-small div { background-color: rgba(46, 204, 113, 0.8); color: #fff; font-weight: bold; }
@@ -50,10 +59,10 @@
 
     <div class="sidebar">
         <div class="sidebar-header">
-            <div class="sidebar-title">PROJECT SENTREE</div>
+            <div class="sidebar-title">Project SenTree</div>
             <div class="sidebar-location">📍ALMAN BÜYÜKELÇİLİĞİ - TARABYA</div>
             <p class="sidebar-subtitle">GIS TABANLI KENTSEL EKOSİSTEM HİZMETLERİ TAKİP SİSTEMİ</p>
-            <div class="sidebar-powered">Powered by CLIMERA Projects</div>
+            <div class="sidebar-powered">Powered by ClimEra Projects</div>
         </div>
         <div class="sidebar-content">
             <div id="excel-verileri">Veriler yükleniyor...</div>
@@ -70,55 +79,33 @@
 
     <div id="map"></div>
 
-    <!-- Leaflet, MarkerCluster, PapaParse ve PROJ4JS Kütüphaneleri -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
 
     <script>
-        // EPSG:5254 (TUREF / TM30) Tanımlaması
         proj4.defs("EPSG:5254", "+proj=tmerc +lat_0=0 +lon_0=30 +k=1 +x_0=500000 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs");
 
-        var map = L.map('map', { 
-            zoomControl: false, 
-            attributionControl: false, 
-            minZoom: 12, 
-            maxZoom: 25, 
-            zoomSnap: 0.1, 
-            zoomDelta: 0.1
-        });
-
+        var map = L.map('map', { zoomControl: false, attributionControl: false, minZoom: 12, maxZoom: 19, zoomSnap: 0.1, zoomDelta: 0.1 });
         var globalAnaKatman; 
         
-        // maxClusterRadius düşürüldü (25) böylece ağaçlar daha çabuk açılacak, sürekli tıklama gerekmeyecek
-        var markers = L.markerClusterGroup({
-            showCoverageOnHover: false,
-            maxClusterRadius: 40,
-            disableClusteringAtZoom: 20 // 18. zoom seviyesine gelince kümelemeyi tamamen bırakır
-        });
+        var markers = L.markerClusterGroup({ showCoverageOnHover: false, maxClusterRadius: 25, disableClusteringAtZoom: 18 });
 
-        // --- EPSG:5254 GEOJSON YÜKLEME ---
         fetch('veri.geojson')
             .then(response => response.json())
             .then(data => {
                 globalAnaKatman = L.geoJSON(data, {
-                    // GeoJSON içindeki EPSG:5254 X/Y değerlerini WGS84'e çeviriyoruz
                     coordsToLatLng: function (coords) {
-                        // coords[0] = X (Doğu), coords[1] = Y (Kuzey)
                         var transformed = proj4("EPSG:5254", "EPSG:4326", [coords[0], coords[1]]);
                         return new L.LatLng(transformed[1], transformed[0]);
                     },
                     style: { color: "darkgray", weight: 1, opacity: 0.6, fillColor: "gray", fillOpacity: 0.1 }
                 }).addTo(map);
-                
-                map.fitBounds(globalAnaKatman.getBounds(), {
-                    paddingTopLeft: [360, 20], 
-                    paddingBottomRight: [20, 20]
-                });
-            })
-            .catch(err => console.error("GeoJSON yüklenemedi:", err));
+                map.fitBounds(globalAnaKatman.getBounds(), { paddingTopLeft: [360, 20], paddingBottomRight: [20, 20] });
+            }).catch(err => console.error("GeoJSON yüklenemedi:", err));
 
+        // URL'Yİ KENDİ LINKINIZLE DEĞİŞTİRMEYİ UNUTMAYIN
         var csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQgLRxnEhblACdZ6LTb4NINI8RwcLotC6j-h9AxTm1C0SffFWel0PnzOoUWE1Jh9tC1EUOWhGQE4gow/pub?gid=942754741&single=true&output=csv";
 
         Papa.parse(csvUrl, {
@@ -128,46 +115,35 @@
                 var veriler = results.data;
                 if(veriler && veriler.length > 1) {
                     var basliklar = veriler[0]; 
-                    
                     markers.clearLayers();
 
                     for (var i = 1; i < veriler.length; i++) {
                         var satir = veriler[i];
-                        
-                        // Metin okuma ve temizleme (virgülleri ayarlar)
-                        var rawY = parseFloat(satir[7] ? satir[7].toString().replace(',', '.') : "NaN"); // H Sütunu = Kuzey (Y)
-                        var rawX = parseFloat(satir[8] ? satir[8].toString().replace(',', '.') : "NaN"); // I Sütunu = Doğu (X)
-                        
+                        var rawY = parseFloat(satir[7] ? satir[7].toString().replace(',', '.') : "NaN"); 
+                        var rawX = parseFloat(satir[8] ? satir[8].toString().replace(',', '.') : "NaN"); 
                         var simgeBoyutu = parseFloat(satir[5] ? satir[5].toString().replace(',', '.') : "8");
                         if (isNaN(simgeBoyutu) || simgeBoyutu <= 0) simgeBoyutu = 8;
 
                         if (!isNaN(rawY) && !isNaN(rawX) && rawY > 1000 && rawX > 1000) {
-                            
-                            // PROJ4JS İLE EXCEL VERİSİNİ DÖNÜŞTÜR (X ve Y'den Enlem ve Boylama)
-                            // proj4'e önce X (Doğu), sonra Y (Kuzey) verilir
                             var convertedCoords = proj4("EPSG:5254", "EPSG:4326", [rawX, rawY]);
-                            var lng = convertedCoords[0]; // Çevrilmiş Boylam
-                            var lat = convertedCoords[1]; // Çevrilmiş Enlem
+                            var lng = convertedCoords[0]; 
+                            var lat = convertedCoords[1]; 
 
                             var popupHTML = "<div style='min-width:180px'><h3 class='agac-popup-baslik'>Biyometrik Analiz</h3>";
-                            
                             [0, 1, 2, 6, 7, 8, 9].forEach(idx => {
                                 if(satir[idx]) popupHTML += `<div class="agac-popup-satir"><span>${basliklar[idx]}</span><span style="font-weight:600">${satir[idx]}</span></div>`;
                             });
                             popupHTML += "</div>";
 
-                            var marker = L.circleMarker([lat, lng], {
-                                radius: simgeBoyutu, 
-                                fillColor: "#2ecc71", color: "#2ecc71", weight: 2, fillOpacity: 0.8, className: 'pulsing-marker'
-                            }).bindPopup(popupHTML);
-
+                            var marker = L.circleMarker([lat, lng], { radius: simgeBoyutu, fillColor: "#2ecc71", color: "#2ecc71", weight: 2, fillOpacity: 0.8, className: 'pulsing-marker' }).bindPopup(popupHTML);
                             markers.addLayer(marker);
                         }
                     }
                     map.addLayer(markers);
 
-                    // Sabit panel verileri K(10) ile P(15) arası
-                    var panelSutunlari = [10, 11, 12, 13, 14, 15]; 
+                    // --- TREND (OK) MANTIĞI ---
+                    var panelSutunlari = [10, 11, 12, 13, 14, 15]; // Mevcut veriler (K, L, M, N, O, P)
+                    var eskiVeriSutunlari = [16, 17, 18, 19, 20, 21]; // Önceki dönem verileri (Q, R, S, T, U, V)
                     var sonGuncelVeri = null;
                     
                     for (var j = veriler.length - 1; j >= 1; j--) {
@@ -179,10 +155,40 @@
 
                     if (sonGuncelVeri) {
                         var html = '<div class="excel-kutu-container">';
-                        panelSutunlari.forEach(index => {
-                            var val = sonGuncelVeri[index] ? sonGuncelVeri[index] : "0";
+                        
+                        panelSutunlari.forEach((index, i) => {
+                            var mevcutDegerText = sonGuncelVeri[index] ? sonGuncelVeri[index].toString().trim() : "0";
                             var baslikAdi = basliklar[index] ? basliklar[index] : `-`;
-                            html += `<div class="veri-kutusu"><div class="veri-baslik">${baslikAdi}</div><div class="veri-deger">${val}</div></div>`;
+                            
+                            var eskiSutunIndex = eskiVeriSutunlari[i]; // Eşleşen eski veriyi al
+                            var eskiDegerText = sonGuncelVeri[eskiSutunIndex] ? sonGuncelVeri[eskiSutunIndex].toString().trim() : null;
+
+                            var trendIcon = ""; // Ok simgesi değişkeni
+                            
+                            // Eğer eski veri varsa, sayıya çevirip karşılaştır
+                            if (eskiDegerText !== null && eskiDegerText !== "") {
+                                var mevcutSayi = parseFloat(mevcutDegerText.replace(',', '.'));
+                                var eskiSayi = parseFloat(eskiDegerText.replace(',', '.'));
+                                
+                                if (!isNaN(mevcutSayi) && !isNaN(eskiSayi)) {
+                                    if (mevcutSayi > eskiSayi) {
+                                        trendIcon = "<span class='trend-up'>▲</span>"; // Artış
+                                    } else if (mevcutSayi < eskiSayi) {
+                                        trendIcon = "<span class='trend-down'>▼</span>"; // Azalış
+                                    } else {
+                                        trendIcon = "<span class='trend-flat'>▬</span>"; // Sabit
+                                    }
+                                }
+                            }
+
+                            html += `
+                            <div class="veri-kutusu">
+                                <div class="veri-baslik">${baslikAdi}</div>
+                                <div class="veri-deger-container">
+                                    <span class="veri-deger">${mevcutDegerText}</span>
+                                    ${trendIcon}
+                                </div>
+                            </div>`;
                         });
                         html += '</div>';
                         document.getElementById('excel-verileri').innerHTML = html;
@@ -191,31 +197,16 @@
             }
         });
 
+        // Kılavuz ve etkileşim...
         var idleTimer;
         var zoomGuide = document.getElementById('zoomGuide');
-
         function showGuide() { zoomGuide.style.opacity = "1"; }
         function hideGuide() { zoomGuide.style.opacity = "0"; }
-
         function resetView() {
-            if (globalAnaKatman) {
-                map.closePopup(); 
-                map.fitBounds(globalAnaKatman.getBounds(), { paddingTopLeft: [360, 20], paddingBottomRight: [20, 20], animate: true });
-                setTimeout(showGuide, 1500);
-            }
+            if (globalAnaKatman) { map.closePopup(); map.fitBounds(globalAnaKatman.getBounds(), { paddingTopLeft: [360, 20], paddingBottomRight: [20, 20], animate: true }); setTimeout(showGuide, 1500); }
         }
-
-        function handleInteraction() {
-            hideGuide(); 
-            clearTimeout(idleTimer);
-            idleTimer = setTimeout(resetView, 15000); 
-        }
-
-        window.onload = () => {
-            handleInteraction(); 
-            setTimeout(showGuide, 4500); 
-        };
-        
+        function handleInteraction() { hideGuide(); clearTimeout(idleTimer); idleTimer = setTimeout(resetView, 15000); }
+        window.onload = () => { handleInteraction(); setTimeout(showGuide, 4500); };
         document.addEventListener('touchstart', handleInteraction, {passive: true});
         document.addEventListener('mousedown', handleInteraction);
         map.on('zoomstart', handleInteraction);
