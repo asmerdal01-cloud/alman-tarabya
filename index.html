@@ -23,16 +23,10 @@
 
         .excel-kutu-container { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 5px; }
         
-        /* KUTU TIKLAMA VE iOS EFEKTLERİ */
-        .veri-kutusu { 
-            background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); 
-            border-radius: 12px; padding: 12px; text-align: center; position: relative;
-            cursor: pointer; transition: transform 0.2s cubic-bezier(0.25, 0.8, 0.25, 1), background 0.2s; 
-        }
+        .veri-kutusu { background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 12px; text-align: center; position: relative; cursor: pointer; transition: transform 0.2s cubic-bezier(0.25, 0.8, 0.25, 1), background 0.2s; }
         .veri-kutusu:hover { background: rgba(255, 255, 255, 0.08); }
-        .veri-kutusu:active { transform: scale(0.92); } /* Tıklanınca içeri çökme hissi */
+        .veri-kutusu:active { transform: scale(0.92); }
 
-        /* Metinlerin tıklamayı engellememesi için pointer-events: none eklendi */
         .veri-baslik { font-size: 10px; color: #999; text-transform: uppercase; margin-bottom: 6px; pointer-events: none; }
         .veri-deger-container { display: flex; align-items: center; justify-content: center; gap: 6px; pointer-events: none; }
         .veri-deger { font-size: 16px; font-weight: 600; color: #ffffff; }
@@ -41,24 +35,10 @@
         .trend-down { color: #e74c3c; font-size: 14px; }
         .trend-flat { color: #95a5a6; font-size: 14px; }
 
-        /* iOS KLASÖR AÇILMA MODALI (GRAFİK PENCERESİ) */
-        #iosModal {
-            display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(0,0,0,0.4); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-            z-index: 9999; align-items: center; justify-content: center;
-            opacity: 0; transition: opacity 0.3s ease;
-        }
+        #iosModal { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.4); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 9999; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s ease; }
         #iosModal.show { opacity: 1; }
         
-        #iosModalContent {
-            width: 90%; max-width: 700px; height: 450px;
-            background: rgba(30, 30, 30, 0.85); border-radius: 24px;
-            border: 1px solid rgba(255,255,255,0.15); padding: 25px;
-            box-shadow: 0 25px 50px rgba(0,0,0,0.5);
-            transform: scale(0); opacity: 0;
-            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.2), opacity 0.4s ease;
-            position: relative; display: flex; flex-direction: column;
-        }
+        #iosModalContent { width: 90%; max-width: 700px; height: 450px; background: rgba(30, 30, 30, 0.85); border-radius: 24px; border: 1px solid rgba(255,255,255,0.15); padding: 25px; box-shadow: 0 25px 50px rgba(0,0,0,0.5); transform: scale(0); opacity: 0; transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.2), opacity 0.4s ease; position: relative; display: flex; flex-direction: column; }
         #iosModal.show #iosModalContent { transform: scale(1); opacity: 1; }
         
         .modal-baslik { color: white; margin: 0 0 15px 0; font-size: 18px; font-weight: 600; }
@@ -125,7 +105,7 @@
     <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Chart.js Eklendi -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
         proj4.defs("EPSG:5254", "+proj=tmerc +lat_0=0 +lon_0=30 +k=1 +x_0=500000 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs");
@@ -167,6 +147,7 @@
                         if (isNaN(simgeBoyutu) || simgeBoyutu <= 0) simgeBoyutu = 8;
 
                         if (!isNaN(rawY) && !isNaN(rawX) && rawY > 1000 && rawX > 1000) {
+                            
                             var convertedCoords = proj4("EPSG:5254", "EPSG:4326", [rawX, rawY]);
                             var lng = convertedCoords[0]; 
                             var lat = convertedCoords[1]; 
@@ -185,18 +166,9 @@
 
                     var panelSutunlari = [10, 11, 12, 13, 14, 15]; 
                     var eskiVeriSutunlari = [16, 17, 18, 19, 20, 21]; 
-                    
-                    var birimler = {
-                        10: "ton",   
-                        11: "ton",   
-                        12: "ton",   
-                        13: "TL",    
-                        14: "",      
-                        15: "adet"   
-                    };
+                    var birimler = { 10: "ton", 11: "ton", 12: "ton", 13: "TL", 14: "", 15: "adet" };
 
                     var sonGuncelVeri = null;
-                    
                     for (var j = veriler.length - 1; j >= 1; j--) {
                         if (veriler[j] && veriler[j][10] && veriler[j][10].toString().trim() !== "") {
                             sonGuncelVeri = veriler[j];
@@ -205,6 +177,12 @@
                     }
 
                     if (sonGuncelVeri) {
+                        
+                        // EXCEL'DEN DOĞRUDAN İBRELİ/YAPRAKLI SAYILARINI ÇEKİYORUZ
+                        // W Sütunu = 22. İndeks, X Sütunu = 23. İndeks
+                        var ibreliSayisi = parseInt(sonGuncelVeri[22]) || 0;
+                        var yaprakliSayisi = parseInt(sonGuncelVeri[23]) || 0;
+
                         var html = '<div class="excel-kutu-container">';
                         
                         panelSutunlari.forEach((index, i) => {
@@ -215,7 +193,6 @@
                             var eskiSutunIndex = eskiVeriSutunlari[i]; 
                             var eskiDegerText = sonGuncelVeri[eskiSutunIndex] ? sonGuncelVeri[eskiSutunIndex].toString().trim() : null;
 
-                            // Grafik için sayıları temizleyip ondalığa çeviriyoruz
                             var mevcutSayi = parseFloat(mevcutDegerText.replace(',', '.'));
                             var eskiSayi = eskiDegerText ? parseFloat(eskiDegerText.replace(',', '.')) : NaN;
 
@@ -226,11 +203,12 @@
                                 else trendIcon = "<span class='trend-flat' style='margin-left:5px;'>▬</span>"; 
                             }
 
-                            // data-* nitelikleriyle grafik fonksiyonuna verileri aktarıyoruz
+                            // Excel'den aldığımız ibreli/yaprakli sayılarını kutunun "data" attribute'larına ekledik
                             html += `
                             <div class="veri-kutusu" onclick="openChart(event, this)" 
                                  data-baslik="${baslikAdi}" data-mevcut="${mevcutSayi}" 
-                                 data-eski="${eskiSayi}" data-birim="${birimler[index]}">
+                                 data-eski="${eskiSayi}" data-birim="${birimler[index]}"
+                                 data-ibreli="${ibreliSayisi}" data-yaprakli="${yaprakliSayisi}">
                                 <div class="veri-baslik">${baslikAdi}</div>
                                 <div class="veri-deger-container">
                                     <span class="veri-deger">${mevcutDegerText}</span>${birimMetni}${trendIcon}
@@ -248,14 +226,15 @@
         var currentChart = null;
 
         function openChart(event, element) {
-            // HTML'deki data- verilerini alıyoruz
             var baslik = element.getAttribute('data-baslik');
             var mevcut = parseFloat(element.getAttribute('data-mevcut'));
             var eski = parseFloat(element.getAttribute('data-eski'));
             var birim = element.getAttribute('data-birim');
+            
+            var ibreli = parseInt(element.getAttribute('data-ibreli')) || 0;
+            var yaprakli = parseInt(element.getAttribute('data-yaprakli')) || 0;
             if (birim === "undefined") birim = "";
 
-            // Tıklanan kutunun ekrandaki koordinatlarını al
             var rect = element.getBoundingClientRect();
             var originX = rect.left + (rect.width / 2);
             var originY = rect.top + (rect.height / 2);
@@ -264,64 +243,79 @@
             var modalContent = document.getElementById('iosModalContent');
             
             document.getElementById('modalBaslik').innerText = baslik + " Karşılaştırması";
-
-            // Modalı görünür yap
             modal.style.display = 'flex';
-            
-            // Animasyon başlangıç noktasını tıklanan kutunun merkezi yap
             modalContent.style.transformOrigin = `${originX}px ${originY}px`;
 
-            // 10ms sonra animasyonu tetikle
             setTimeout(() => { modal.classList.add('show'); }, 10);
-
-            // Eski grafik varsa yok et (yenisini çizeceğiz)
             if(currentChart) currentChart.destroy();
 
             var ctx = document.getElementById('chartCanvas').getContext('2d');
-            
-            // Eğer "Önceki Dönem" verisi yoksa sadece Mevcut göster, varsa ikisini göster
-            var chartLabels = isNaN(eski) ? ['Mevcut Dönem'] : ['Önceki Dönem', 'Mevcut Dönem'];
-            var chartData = isNaN(eski) ? [mevcut] : [eski, mevcut];
-            var chartColors = isNaN(eski) ? ['#2ecc71'] : ['#95a5a6', '#2ecc71']; // Eski gri, yeni yeşil
+            var baslikKucuk = baslik.toLocaleLowerCase('tr-TR');
+            var isTreeCount = baslikKucuk.includes("ağaç") || baslikKucuk.includes("agac");
 
-            currentChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: chartLabels,
-                    datasets: [{
-                        label: birim ? `Birim: ${birim}` : 'Değer',
-                        data: chartData,
-                        backgroundColor: chartColors,
-                        borderRadius: 8,
-                        barPercentage: 0.5
-                    }]
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { display: false } }, // Üstteki açıklama kutusunu gizle
-                    scales: {
-                        y: { 
-                            beginAtZero: true, 
-                            ticks: { color: '#bbb', font: {size: 11} }, 
-                            grid: { color: 'rgba(255,255,255,0.05)' } 
-                        },
-                        x: { 
-                            ticks: { color: '#eee', font: {size: 13, weight: 'bold'} }, 
-                            grid: { display: false } 
+            // EĞER AĞAÇ SAYISI KUTUSUNA TIKLANDIYSA YIĞILMIŞ ÇUBUK (İBRELİ/YAPRAKLI) ÇİZİLİR
+            if (isTreeCount && (ibreli > 0 || yaprakli > 0)) {
+                var chartLabels = isNaN(eski) ? ['Mevcut Dönem'] : ['Önceki Dönem', 'Mevcut Dönem'];
+                
+                // Tanımlanamayan/Diğer ağaçların hesabı
+                var diger = mevcut - (ibreli + yaprakli);
+                if (diger < 0) diger = 0;
+
+                var datasets = [];
+                if (!isNaN(eski)) {
+                    datasets.push({ label: 'Geçmiş Toplam', data: [eski, 0], backgroundColor: '#95a5a6', borderRadius: 4 });
+                    datasets.push({ label: 'İbreli', data: [0, ibreli], backgroundColor: '#27ae60', borderRadius: 4 });
+                    datasets.push({ label: 'Yapraklı', data: [0, yaprakli], backgroundColor: '#f39c12', borderRadius: 4 });
+                    if(diger > 0) datasets.push({ label: 'Diğer', data: [0, diger], backgroundColor: '#8e44ad', borderRadius: 4 });
+                } else {
+                    datasets.push({ label: 'İbreli', data: [ibreli], backgroundColor: '#27ae60', borderRadius: 4 });
+                    datasets.push({ label: 'Yapraklı', data: [yaprakli], backgroundColor: '#f39c12', borderRadius: 4 });
+                    if(diger > 0) datasets.push({ label: 'Diğer', data: [diger], backgroundColor: '#8e44ad', borderRadius: 4 });
+                }
+
+                currentChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: { labels: chartLabels, datasets: datasets },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { legend: { display: true, labels: {color: '#eee'} } },
+                        scales: {
+                            x: { stacked: true, ticks: { color: '#eee', font: {size: 13, weight: 'bold'} }, grid: { display: false } },
+                            y: { stacked: true, beginAtZero: true, ticks: { color: '#bbb' }, grid: { color: 'rgba(255,255,255,0.05)' } }
                         }
                     }
-                }
-            });
+                });
+
+            } else {
+                // DİĞER TÜM KUTULAR İÇİN STANDART ÇUBUK GRAFİK
+                var chartLabels = isNaN(eski) ? ['Mevcut Dönem'] : ['Önceki Dönem', 'Mevcut Dönem'];
+                var chartData = isNaN(eski) ? [mevcut] : [eski, mevcut];
+                var chartColors = isNaN(eski) ? ['#2ecc71'] : ['#95a5a6', '#2ecc71']; 
+
+                currentChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: chartLabels,
+                        datasets: [{ label: birim ? `Birim: ${birim}` : 'Değer', data: chartData, backgroundColor: chartColors, borderRadius: 8, barPercentage: 0.5 }]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { legend: { display: false } }, 
+                        scales: {
+                            y: { beginAtZero: true, ticks: { color: '#bbb', font: {size: 11} }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                            x: { ticks: { color: '#eee', font: {size: 13, weight: 'bold'} }, grid: { display: false } }
+                        }
+                    }
+                });
+            }
         }
 
         function closeChart() {
             var modal = document.getElementById('iosModal');
             modal.classList.remove('show');
-            // Animasyon (0.4s) bittikten sonra arkadaki siyah ekranı kapat
             setTimeout(() => { modal.style.display = 'none'; }, 400); 
         }
 
-        // --- HARİTA ETKİLEŞİM VE KILAVUZ MANTIĞI ---
         var idleTimer;
         var zoomGuide = document.getElementById('zoomGuide');
         function showGuide() { zoomGuide.style.opacity = "1"; }
