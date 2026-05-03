@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SENTREE - SARSINTISIZ KİOSK ARAYÜZÜ</title>
+    <title>SENTREE - SARSINTISIZ NİHAİ KİOSK</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
@@ -46,8 +46,6 @@
         .trend-up { color: #2ecc71; font-size: 14px; }
         .trend-down { color: #e74c3c; font-size: 14px; }
         .trend-flat { color: #95a5a6; font-size: 14px; }
-
-        /* Tüm CSS Vurgu Animasyon Sınıfları Silindi (Titreme Kökünden Yok Edildi) */
 
         #iosModal { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.4); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 9999; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s ease; }
         #iosModal.show { opacity: 1; }
@@ -128,9 +126,9 @@
         var transformedKiosk = proj4("EPSG:5254", "EPSG:4326", rawKioskCoords);
         var kioskLatLng = L.latLng(transformedKiosk[1], transformedKiosk[0]);
         
-        // SARSINTIYI %100 BİTİREN CANVAS MOTORU AKTİF
+        // SIFIR SARSINTI İÇİN CANVAS MOTORU
         var map = L.map('map', { 
-            preferCanvas: true, // Canvas açıldı, titreme ihtimali ortadan kalktı
+            preferCanvas: true, 
             zoomControl: false, 
             attributionControl: false, 
             minZoom: 12, 
@@ -162,23 +160,22 @@
 
         function handleKeyPress(e) { if (e.key === 'Enter') searchLocation(); }
 
-        // JS TABANLI SARSINTISIZ ANİMASYON MOTORU
         var glowLayers = [];
         var animasyonZamanlayici = null;
 
+        // JS Animasyonu (Kusursuz Neon Parlaması, Asla Titremez)
         function baslatJSAnimasyon() {
             var pulseOpacity = 0.2;
-            var pulseDir = 0.04; // Hız
+            var pulseDir = 0.04;
             animasyonZamanlayici = setInterval(() => {
                 pulseOpacity += pulseDir;
                 if(pulseOpacity > 0.6) { pulseOpacity = 0.6; pulseDir = -0.04; }
                 if(pulseOpacity < 0.1) { pulseOpacity = 0.1; pulseDir = 0.04; }
                 
                 glowLayers.forEach(katman => {
-                    // Sadece gölge görevi gören dış katmanın şeffaflığı değişir
                     if(katman.setStyle) { katman.setStyle({ opacity: pulseOpacity, fillOpacity: pulseOpacity / 2 }); }
                 });
-            }, 40); // 40ms = ~25 FPS akıcılık
+            }, 40); 
         }
 
         function searchLocation() {
@@ -191,14 +188,13 @@
             if (foundPOIs.length > 0) {
                 resultsDiv.innerHTML = ""; 
                 aktifVurgularKatmani.clearLayers();
-                glowLayers = []; // Animasyon havuzunu sıfırla
+                glowLayers = []; 
                 if(animasyonZamanlayici) clearInterval(animasyonZamanlayici);
 
                 foundPOIs.forEach(poi => {
                     var coreLayer, glowLayer;
                     
                     if (poi.tip === "polygon") {
-                        // Sahte Neon Efekti: Altına kalın/şeffaf, üstüne ince/net iki katman çizilir.
                         glowLayer = L.polygon(poi.latLngs, { color: '#e74c3c', weight: 14, opacity: 0.3, fillOpacity: 0.1, lineJoin: 'round', interactive: false });
                         coreLayer = L.polygon(poi.latLngs, { color: '#e74c3c', weight: 3, opacity: 1, fillOpacity: 0.7, interactive: false });
                     } else {
@@ -208,13 +204,13 @@
                     
                     aktifVurgularKatmani.addLayer(glowLayer);
                     aktifVurgularKatmani.addLayer(coreLayer);
-                    glowLayers.push(glowLayer); // Sadece gölgeyi animasyon listesine ekle
+                    glowLayers.push(glowLayer); 
                 });
 
                 map.flyToBounds(aktifVurgularKatmani.getBounds(), { padding: [80, 80], maxZoom: 19.5, duration: 2.5 });
                 document.getElementById('clearRouteBtn').style.display = 'block';
                 
-                baslatJSAnimasyon(); // JS Animasyonu Başlat
+                baslatJSAnimasyon(); 
 
             } else {
                 resultsDiv.innerHTML = `<span style="color:#aaa">Konum bulunamadı.</span>`;
@@ -228,7 +224,12 @@
             document.getElementById('searchInput').value = "";
             document.getElementById('searchResults').innerHTML = "";
             document.getElementById('clearRouteBtn').style.display = 'none';
-            map.flyTo(kioskLatLng, 19, { duration: 2 });
+            
+            // SARSINTI KİLİDİ 1: Eğer harita zaten Kiosk noktasındaysa, yerinden kıpırdatma!
+            var dist = map.distance(map.getCenter(), kioskLatLng);
+            if (map.getZoom() !== 19 || dist > 1.0) {
+                map.flyTo(kioskLatLng, 19, { duration: 2 });
+            }
         }
 
         var globalAnaKatman; 
@@ -306,10 +307,20 @@
         }
         function closeChart() { document.getElementById('iosModal').classList.remove('show'); setTimeout(() => { document.getElementById('iosModal').style.display = 'none'; }, 400); }
         
-        // --- 15 SANİYE KURALI ---
+        // --- 15 SANİYE KURALI (SARSINTI KİLİDİ 2) ---
         var idleTimer; 
-        function resetInteraction() { clearHighlight(); map.closePopup(); }
-        function handleInteraction() { clearTimeout(idleTimer); idleTimer = setTimeout(resetInteraction, 15000); }
+        function resetInteraction() { 
+            // Eğer bir vurgu yoksa veya harita zaten merkezdeyse hiçbir işlem yapma
+            var dist = map.distance(map.getCenter(), kioskLatLng);
+            if (aktifVurgularKatmani.getLayers().length > 0 || map.getZoom() !== 19 || dist > 1.0) {
+                clearHighlight(); 
+                map.closePopup(); 
+            }
+        }
+        function handleInteraction() { 
+            clearTimeout(idleTimer); 
+            idleTimer = setTimeout(resetInteraction, 15000); 
+        }
 
         document.addEventListener('touchstart', handleInteraction, {passive: true}); 
         document.addEventListener('mousedown', handleInteraction); 
@@ -318,6 +329,7 @@
         map.on('dragstart', handleInteraction);
         
         handleInteraction();
+
     </script>
 </body>
 </html>
