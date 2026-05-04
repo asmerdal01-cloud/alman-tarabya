@@ -61,7 +61,6 @@
         .veri-kutusu.tam-genislik .veri-baslik { color: #2ecc71; font-weight: bold; letter-spacing: 1px; }
         .veri-kutusu.tam-genislik .veri-deger { font-size: clamp(18px, 1.6vw, 24px); }
 
-        /* AKIŞKAN GRAFİK PENCERESİ */
         #iosModal { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.4); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 9999; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s ease; }
         #iosModal.show { opacity: 1; }
         #iosModalContent { width: 90%; max-width: clamp(400px, 50vw, 750px); height: clamp(300px, 50vh, 500px); background: rgba(30, 30, 30, 0.85); border-radius: 24px; border: 1px solid rgba(255,255,255,0.15); padding: clamp(15px, 2vw, 25px); box-shadow: 0 25px 50px rgba(0,0,0,0.5); transform: scale(0); opacity: 0; transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.2), opacity 0.4s ease; position: relative; display: flex; flex-direction: column; }
@@ -87,7 +86,7 @@
         .agac-popup-baslik { font-size: clamp(12px, 1vw, 14px); font-weight: 600; color: #2ecc71; border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 6px; margin-bottom: 8px; }
         .agac-popup-satir { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: clamp(10px, 0.8vw, 12px); }
 
-        /* DAİRESEL MERKEZİ RADAR TARAMASI VE OPTİK PARLAMA (SİHİR BURADA) */
+        /* DAİRESEL MERKEZİ RADAR TARAMASI VE OPTİK PARLAMA */
         .kiosk-wrapper { position: relative; }
         
         .kiosk-core-dot {
@@ -105,14 +104,22 @@
             animation: radar-spin 5s linear infinite; pointer-events: none;
             -webkit-mask-image: radial-gradient(circle, rgba(0,0,0,1) 0%, rgba(0,0,0,0.5) 25%, rgba(0,0,0,0) 50%);
             mask-image: radial-gradient(circle, rgba(0,0,0,1) 0%, rgba(0,0,0,0.5) 25%, rgba(0,0,0,0) 50%);
-            
-            /* Lazer ağaçların üzerinden geçerken neon gibi parlamasını sağlayan CSS fiziği */
             mix-blend-mode: color-dodge; 
+            
+            /* RADARIN YUMUŞAKÇA GERİ GELMESİNİ SAĞLAYAN GEÇİŞ */
+            opacity: 1;
+            transition: opacity 2s ease-in; 
         }
         
         @keyframes radar-spin { 
             from { transform: rotate(0deg); } 
             to { transform: rotate(360deg); } 
+        }
+
+        /* YENİ: KULLANICI DOKUNDUĞUNDA RADARI ANINDA GİZLE */
+        body.interacting .kiosk-radar-sweep {
+            opacity: 0 !important;
+            transition: opacity 0.3s ease-out; /* Kaybolurken çok hızlı kaybolur */
         }
 
     </style>
@@ -180,7 +187,6 @@
             zoomDelta: 0.1 
         }).setView(kioskLatLng, 19);
         
-        // KIOSK İKONU VE İÇİNE GÖMÜLÜ FİZİKSEL RADAR
         var kioskIcon = L.divIcon({ 
             html: '<div class="kiosk-radar-container"><div class="kiosk-radar-sweep"></div></div><div class="kiosk-core-dot"></div>', 
             className: 'kiosk-wrapper', 
@@ -374,6 +380,8 @@
         function closeChart() { document.getElementById('iosModal').classList.remove('show'); setTimeout(() => { document.getElementById('iosModal').style.display = 'none'; }, 400); }
         
         var idleTimer; 
+        var radarTimer; // YENİ: Radar için özel kısa zamanlayıcı
+
         function resetInteraction() { 
             var dist = map.distance(map.getCenter(), kioskLatLng);
             if (aktifVurgularKatmani.getLayers().length > 0 || map.getZoom() !== 19 || dist > 1.0) {
@@ -381,9 +389,18 @@
                 map.closePopup(); 
             }
         }
+        
         function handleInteraction() { 
+            // 1. Ana Kiosk Sıfırlama (15 Saniye)
             clearTimeout(idleTimer); 
             idleTimer = setTimeout(resetInteraction, 15000); 
+            
+            // 2. YENİ: Radarı Gizle ve 4 Saniye Sonra Geri Getir
+            document.body.classList.add('interacting');
+            clearTimeout(radarTimer);
+            radarTimer = setTimeout(() => {
+                document.body.classList.remove('interacting');
+            }, 4000); // Kullanıcı 4 saniye dokunmazsa radar yavaşça geri döner
         }
 
         document.addEventListener('touchstart', handleInteraction, {passive: true}); 
