@@ -13,31 +13,33 @@
         body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; }
         #map { height: 100vh; width: 100vw; background-color: #161616; z-index: 1; }
 
-        /* AKIŞKAN SOL PANEL */
+        /* AKIŞKAN VE OTOMATİK SIĞAN SOL PANEL */
         .sidebar { 
             position: fixed; 
             top: clamp(15px, 2vh, 25px); 
             left: clamp(10px, 1.5vw, 20px); 
-            bottom: clamp(15px, 2vh, 25px); 
             width: clamp(260px, 22vw, 360px); 
+            max-height: calc(100vh - clamp(30px, 4vh, 50px)); /* Ekrana sığması için alt sınır */
+            height: fit-content; /* İÇERİĞE GÖRE OTOMATİK SIĞMA SİHRİ */
             background-color: rgba(40, 40, 40, 0.70); backdrop-filter: blur(15px) saturate(180%); -webkit-backdrop-filter: blur(15px) saturate(180%); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; color: #e0e0e0; z-index: 1000; display: flex; flex-direction: column; box-sizing: border-box; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); 
         }
         .sidebar-header { padding: clamp(15px, 2vh, 25px) clamp(15px, 1.5vw, 20px) clamp(15px, 2vh, 20px); border-bottom: 1px solid rgba(255, 255, 255, 0.08); background-color: rgba(0, 0, 0, 0.2); border-radius: 20px 20px 0 0; }
         
-        /* AKIŞKAN YAZI TİPLERİ */
         .sidebar-title { margin: 0; font-size: clamp(18px, 1.6vw, 26px); font-weight: 700; color: #ffffff; letter-spacing: 0.5px; }
         .sidebar-location { margin: 4px 0 0 0; font-size: clamp(11px, 0.9vw, 14px); font-weight: 600; color: #ffffff; opacity: 0.8; }
         .sidebar-subtitle { margin: clamp(8px, 1vh, 12px) 0 0 0; font-size: clamp(8.5px, 0.7vw, 10px); color: #2ecc71; text-transform: uppercase; letter-spacing: 0.8px; line-height: 1.4; font-weight: 700; }
         .sidebar-powered { text-align: right; margin-top: clamp(10px, 1.5vh, 15px); font-size: clamp(8px, 0.6vw, 10px); color: #777; font-style: italic; }
-        .sidebar-content { padding: clamp(10px, 1vw, 15px); flex-grow: 1; overflow-y: auto; }
+        
+        .sidebar-content { padding: clamp(10px, 1vw, 15px); overflow-y: auto; }
 
-        /* YENİ: SOL PANEL ALT ETKİLEŞİM UYARISI */
+        /* FİZİKSEL OLARAK KAPANIP AÇILAN ETKİLEŞİM UYARISI */
         .sidebar-footer-hint {
             padding: clamp(12px, 1.5vh, 16px);
             text-align: center; font-size: clamp(8.5px, 0.7vw, 11px); color: #2ecc71; font-weight: 700; letter-spacing: 1px;
             border-top: 1px solid rgba(255, 255, 255, 0.05); background: rgba(0, 0, 0, 0.3); border-radius: 0 0 20px 20px;
             display: flex; align-items: center; justify-content: center; gap: 8px;
-            opacity: 1; transition: opacity 2s ease-in; 
+            max-height: 60px; /* Kutunun orijinal yüksekliği */
+            overflow: hidden; opacity: 1; transition: all 0.4s ease-in-out;
         }
         .pulse-dot {
             width: 6px; height: 6px; background: #2ecc71; border-radius: 50%;
@@ -114,10 +116,7 @@
             -webkit-mask-image: radial-gradient(circle, rgba(0,0,0,1) 0%, rgba(0,0,0,0.5) 25%, rgba(0,0,0,0) 50%);
             mask-image: radial-gradient(circle, rgba(0,0,0,1) 0%, rgba(0,0,0,0.5) 25%, rgba(0,0,0,0) 50%);
             mix-blend-mode: color-dodge; 
-            
-            /* RADARIN YUMUŞAKÇA GERİ GELMESİNİ SAĞLAYAN GEÇİŞ */
-            opacity: 1;
-            transition: opacity 2s ease-in; 
+            opacity: 1; transition: opacity 2s ease-in; 
         }
         
         @keyframes radar-spin { 
@@ -125,11 +124,20 @@
             to { transform: rotate(360deg); } 
         }
 
-        /* GÜNCELLENDİ: KULLANICI DOKUNDUĞUNDA RADARI VE UYARIYI GİZLE */
-        body.interacting .kiosk-radar-sweep,
+        /* GÜNCELLENDİ: RADARIN VE ALT UYARININ KUSURSUZ GİZLENMESİ */
+        body.interacting .kiosk-radar-sweep {
+            opacity: 0 !important;
+            transition: opacity 0.3s ease-out; 
+        }
+        
         body.interacting .sidebar-footer-hint {
             opacity: 0 !important;
-            transition: opacity 0.3s ease-out; /* Kaybolurken anında gizlenir */
+            max-height: 0 !important; /* Kutuyu fiziksel olarak tamamen siler */
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
+            border-width: 0 !important;
+            margin: 0 !important;
+            /* Bu satırlar sayesinde boşluk kalmaz ve panel akışkan bir şekilde küçülür */
         }
 
     </style>
@@ -154,7 +162,7 @@
         <div class="sidebar-content">
             <div id="excel-verileri">Veriler yükleniyor...</div>
         </div>
-        <!-- YENİ EKLENEN ANİMASYONLU ETKİLEŞİM UYARISI -->
+        <!-- OTOMATİK KAPANIP AÇILAN ETKİLEŞİM UYARISI -->
         <div class="sidebar-footer-hint">
             <span class="pulse-dot"></span> ETKİLEŞİM İÇİN EKRANA DOKUNUN
         </div>
@@ -395,7 +403,6 @@
         var idleTimer; 
 
         function resetInteraction() { 
-            // 15 Saniye sonra sistem başa döndüğünde: Radarı ve uyarı yazısını geri getir.
             document.body.classList.remove('interacting'); 
             
             var dist = map.distance(map.getCenter(), kioskLatLng);
@@ -403,13 +410,12 @@
                 clearHighlight(); 
                 map.closePopup(); 
             }
+            
+            closeChart(); // YENİ: Kiosk boşta kalınca açık kalan grafikleri de otomatik kapat!
         }
         
         function handleInteraction() { 
-            // Kullanıcı dokunduğunda: Radarı ve animasyonlu uyarıyı hemen gizle
             document.body.classList.add('interacting'); 
-            
-            // Sıfırlama zamanlayıcısını baştan başlat (Kullanıcı 15 saniye hiçbir şey yapmazsa resetInteraction çalışır)
             clearTimeout(idleTimer); 
             idleTimer = setTimeout(resetInteraction, 15000); 
         }
@@ -420,7 +426,6 @@
         map.on('zoomstart', handleInteraction); 
         map.on('dragstart', handleInteraction);
         
-        // İlk açılışta radarın çalışması için sıfırlama sürecini başlat
         handleInteraction();
         setTimeout(() => { document.body.classList.remove('interacting'); }, 100);
 
