@@ -87,7 +87,7 @@
         .agac-popup-baslik { font-size: clamp(12px, 1vw, 14px); font-weight: 600; color: #2ecc71; border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 6px; margin-bottom: 8px; }
         .agac-popup-satir { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: clamp(10px, 0.8vw, 12px); }
 
-        /* DAİRESEL MERKEZİ RADAR TARAMASI (KIOSK NOKTASINA BAĞLI) */
+        /* DAİRESEL MERKEZİ RADAR TARAMASI VE OPTİK PARLAMA (SİHİR BURADA) */
         .kiosk-wrapper { position: relative; }
         
         .kiosk-core-dot {
@@ -101,12 +101,13 @@
         
         .kiosk-radar-sweep {
             position: absolute; top: -1500px; left: -1500px; width: 3000px; height: 3000px; border-radius: 50%;
-            /* Çok yumuşak ve transparan konik geçiş */
             background: conic-gradient(from 0deg, transparent 0%, transparent 75%, rgba(46, 204, 113, 0.02) 90%, rgba(46, 204, 113, 0.15) 100%);
             animation: radar-spin 5s linear infinite; pointer-events: none;
-            /* Radarın kenarlarını yumuşakça silen radyal maske */
             -webkit-mask-image: radial-gradient(circle, rgba(0,0,0,1) 0%, rgba(0,0,0,0.5) 25%, rgba(0,0,0,0) 50%);
             mask-image: radial-gradient(circle, rgba(0,0,0,1) 0%, rgba(0,0,0,0.5) 25%, rgba(0,0,0,0) 50%);
+            
+            /* Lazer ağaçların üzerinden geçerken neon gibi parlamasını sağlayan CSS fiziği */
+            mix-blend-mode: color-dodge; 
         }
         
         @keyframes radar-spin { 
@@ -179,7 +180,7 @@
             zoomDelta: 0.1 
         }).setView(kioskLatLng, 19);
         
-        // KIOSK İKONU VE İÇİNE GÖMÜLÜ FİZİKSEL RADAR (Harita kaydıkça Kiosk'u takip eder)
+        // KIOSK İKONU VE İÇİNE GÖMÜLÜ FİZİKSEL RADAR
         var kioskIcon = L.divIcon({ 
             html: '<div class="kiosk-radar-container"><div class="kiosk-radar-sweep"></div></div><div class="kiosk-core-dot"></div>', 
             className: 'kiosk-wrapper', 
