@@ -31,6 +31,24 @@
         .sidebar-powered { text-align: right; margin-top: clamp(10px, 1.5vh, 15px); font-size: clamp(8px, 0.6vw, 10px); color: #777; font-style: italic; }
         .sidebar-content { padding: clamp(10px, 1vw, 15px); flex-grow: 1; overflow-y: auto; }
 
+        /* YENİ: SOL PANEL ALT ETKİLEŞİM UYARISI */
+        .sidebar-footer-hint {
+            padding: clamp(12px, 1.5vh, 16px);
+            text-align: center; font-size: clamp(8.5px, 0.7vw, 11px); color: #2ecc71; font-weight: 700; letter-spacing: 1px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05); background: rgba(0, 0, 0, 0.3); border-radius: 0 0 20px 20px;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            opacity: 1; transition: opacity 2s ease-in; 
+        }
+        .pulse-dot {
+            width: 6px; height: 6px; background: #2ecc71; border-radius: 50%;
+            animation: fast-pulse 1.5s infinite;
+        }
+        @keyframes fast-pulse {
+            0% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.7); }
+            70% { box-shadow: 0 0 0 6px rgba(46, 204, 113, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0); }
+        }
+
         .search-container { margin-top: clamp(10px, 1.5vh, 15px); position: relative; display: flex; gap: 8px; }
         .search-input { flex-grow: 1; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: clamp(8px, 1vh, 12px) clamp(10px, 1vw, 15px); color: white; font-size: clamp(11px, 0.9vw, 14px); outline: none; transition: border 0.3s; }
         .search-input:focus { border-color: #2ecc71; }
@@ -72,16 +90,7 @@
 
         .marker-cluster-small { background-color: rgba(46, 204, 113, 0.6); }
         .marker-cluster-small div { background-color: rgba(46, 204, 113, 0.8); color: #fff; font-weight: bold; font-size: clamp(10px, 0.8vw, 12px); }
-        .zoom-guide { position: fixed; bottom: clamp(20px, 3vh, 30px); right: clamp(20px, 3vw, 30px); z-index: 1001; pointer-events: none; opacity: 0; transition: opacity 1s ease-in-out; display: flex; flex-direction: column; align-items: center; }
-        .pinch-container { position: relative; width: clamp(50px, 5vw, 70px); height: clamp(50px, 5vw, 70px); background: rgba(255,255,255,0.03); border-radius: 50%; }
-        .finger { position: absolute; width: clamp(12px, 1.2vw, 18px); height: clamp(12px, 1.2vw, 18px); background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.5); border-radius: 50%; top: 50%; left: 50%; }
-        .finger-1 { animation: pinch-move-1 3.5s infinite ease-in-out; }
-        .finger-2 { animation: pinch-move-2 3.5s infinite ease-in-out; }
-        @keyframes pinch-move-1 { 0%, 100% { transform: translate(-110%, -110%); opacity: 0.1; } 50% { transform: translate(-10%, -10%); opacity: 0.6; } }
-        @keyframes pinch-move-2 { 0%, 100% { transform: translate(40%, 40%); opacity: 0.1; } 50% { transform: translate(-10%, -10%); opacity: 0.6; } }
-        .zoom-text { color: white; font-size: clamp(8px, 0.7vw, 10px); margin-top: 12px; opacity: 0.4; letter-spacing: 1px; text-align: center; font-weight: 500; }
-        @keyframes pulse-marker { 0% { stroke-width: 2; stroke-opacity: 0.8; } 50% { stroke-width: 12; stroke-opacity: 0.1; } 100% { stroke-width: 2; stroke-opacity: 0.8; } }
-        .pulsing-marker { animation: pulse-marker 3s infinite ease-in-out; }
+        
         .leaflet-popup-content-wrapper { background-color: rgba(25, 25, 25, 0.95) !important; backdrop-filter: blur(8px); color: #e0e0e0 !important; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); }
         .agac-popup-baslik { font-size: clamp(12px, 1vw, 14px); font-weight: 600; color: #2ecc71; border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 6px; margin-bottom: 8px; }
         .agac-popup-satir { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: clamp(10px, 0.8vw, 12px); }
@@ -116,10 +125,11 @@
             to { transform: rotate(360deg); } 
         }
 
-        /* YENİ: KULLANICI DOKUNDUĞUNDA RADARI ANINDA GİZLE */
-        body.interacting .kiosk-radar-sweep {
+        /* GÜNCELLENDİ: KULLANICI DOKUNDUĞUNDA RADARI VE UYARIYI GİZLE */
+        body.interacting .kiosk-radar-sweep,
+        body.interacting .sidebar-footer-hint {
             opacity: 0 !important;
-            transition: opacity 0.3s ease-out; /* Kaybolurken çok hızlı kaybolur */
+            transition: opacity 0.3s ease-out; /* Kaybolurken anında gizlenir */
         }
 
     </style>
@@ -144,6 +154,10 @@
         <div class="sidebar-content">
             <div id="excel-verileri">Veriler yükleniyor...</div>
         </div>
+        <!-- YENİ EKLENEN ANİMASYONLU ETKİLEŞİM UYARISI -->
+        <div class="sidebar-footer-hint">
+            <span class="pulse-dot"></span> ETKİLEŞİM İÇİN EKRANA DOKUNUN
+        </div>
     </div>
 
     <div class="top-clock-container">
@@ -152,7 +166,6 @@
     </div>
 
     <div id="iosModal" onclick="if(event.target == this) closeChart()"><div id="iosModalContent"><span class="close-btn" onclick="closeChart()">&times;</span><h3 class="modal-baslik" id="modalBaslik">Grafik Yükleniyor...</h3><div class="chart-container"><canvas id="chartCanvas"></canvas></div></div></div>
-    <div id="zoomGuide" class="zoom-guide"><div class="pinch-container"><div class="finger finger-1"></div><div class="finger finger-2"></div></div><div class="zoom-text">ETKİLEŞİM İÇİN <br> DOKUNUN</div></div>
 
     <div id="map"></div>
 
@@ -380,9 +393,11 @@
         function closeChart() { document.getElementById('iosModal').classList.remove('show'); setTimeout(() => { document.getElementById('iosModal').style.display = 'none'; }, 400); }
         
         var idleTimer; 
-        var radarTimer; // YENİ: Radar için özel kısa zamanlayıcı
 
         function resetInteraction() { 
+            // 15 Saniye sonra sistem başa döndüğünde: Radarı ve uyarı yazısını geri getir.
+            document.body.classList.remove('interacting'); 
+            
             var dist = map.distance(map.getCenter(), kioskLatLng);
             if (aktifVurgularKatmani.getLayers().length > 0 || map.getZoom() !== 19 || dist > 1.0) {
                 clearHighlight(); 
@@ -391,16 +406,12 @@
         }
         
         function handleInteraction() { 
-            // 1. Ana Kiosk Sıfırlama (15 Saniye)
+            // Kullanıcı dokunduğunda: Radarı ve animasyonlu uyarıyı hemen gizle
+            document.body.classList.add('interacting'); 
+            
+            // Sıfırlama zamanlayıcısını baştan başlat (Kullanıcı 15 saniye hiçbir şey yapmazsa resetInteraction çalışır)
             clearTimeout(idleTimer); 
             idleTimer = setTimeout(resetInteraction, 15000); 
-            
-            // 2. YENİ: Radarı Gizle ve 4 Saniye Sonra Geri Getir
-            document.body.classList.add('interacting');
-            clearTimeout(radarTimer);
-            radarTimer = setTimeout(() => {
-                document.body.classList.remove('interacting');
-            }, 4000); // Kullanıcı 4 saniye dokunmazsa radar yavaşça geri döner
         }
 
         document.addEventListener('touchstart', handleInteraction, {passive: true}); 
@@ -409,7 +420,9 @@
         map.on('zoomstart', handleInteraction); 
         map.on('dragstart', handleInteraction);
         
+        // İlk açılışta radarın çalışması için sıfırlama sürecini başlat
         handleInteraction();
+        setTimeout(() => { document.body.classList.remove('interacting'); }, 100);
 
     </script>
 </body>
