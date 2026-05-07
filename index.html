@@ -1,99 +1,923 @@
 <!DOCTYPE html>
+
 <html lang="tr">
+
 <head>
+
     <meta charset="UTF-8">
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>SENTREE - BIO-DİJİTAL İKİZ KONTROL MERKEZİ</title>
+
     
+
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
+
     
+
     <style>
-        body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; background-color: #161616; }
+
+        body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; }
+
         #map { height: 100vh; width: 100vw; background-color: #161616; z-index: 1; }
 
+
+
         /* AKIŞKAN VE OTOMATİK SIĞAN SOL PANEL */
+
         .sidebar { 
-            position: fixed; top: clamp(15px, 2vh, 25px); left: clamp(10px, 1.5vw, 20px); width: clamp(260px, 22vw, 360px); 
-            max-height: calc(100vh - clamp(30px, 4vh, 50px)); height: fit-content; 
-            background-color: rgba(40, 40, 40, 0.70); backdrop-filter: blur(15px) saturate(180%); -webkit-backdrop-filter: blur(15px) saturate(180%); 
-            border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; color: #e0e0e0; z-index: 1000; 
-            display: flex; flex-direction: column; box-sizing: border-box; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); 
-            transition: background-color 0.3s ease, border-color 0.3s ease;
+
+            position: fixed; 
+
+            top: clamp(15px, 2vh, 25px); 
+
+            left: clamp(10px, 1.5vw, 20px); 
+
+            width: clamp(260px, 22vw, 360px); 
+
+            max-height: calc(100vh - clamp(30px, 4vh, 50px)); 
+
+            height: fit-content; 
+
+            background-color: rgba(40, 40, 40, 0.70); backdrop-filter: blur(15px) saturate(180%); -webkit-backdrop-filter: blur(15px) saturate(180%); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; color: #e0e0e0; z-index: 1000; display: flex; flex-direction: column; box-sizing: border-box; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); 
+
         }
-        .sidebar-header { padding: clamp(15px, 2vh, 25px) clamp(15px, 1.5vw, 20px) clamp(15px, 2vh, 20px); border-bottom: 1px solid rgba(255, 255, 255, 0.08); background-color: rgba(0, 0, 0, 0.2); border-radius: 20px 20px 0 0; transition: background-color 0.3s ease; }
+
+        .sidebar-header { padding: clamp(15px, 2vh, 25px) clamp(15px, 1.5vw, 20px) clamp(15px, 2vh, 20px); border-bottom: 1px solid rgba(255, 255, 255, 0.08); background-color: rgba(0, 0, 0, 0.2); border-radius: 20px 20px 0 0; }
+
         
-        .sidebar-title { margin: 0; font-size: clamp(18px, 1.6vw, 26px); font-weight: 700; color: #ffffff; letter-spacing: 0.5px; transition: color 0.3s ease; }
-        .sidebar-location { margin: 4px 0 0 0; font-size: clamp(11px, 0.9vw, 14px); font-weight: 600; color: #ffffff; opacity: 0.8; transition: color 0.3s ease; }
+
+        /* AKIŞKAN YAZI TİPLERİ */
+
+        .sidebar-title { margin: 0; font-size: clamp(18px, 1.6vw, 26px); font-weight: 700; color: #ffffff; letter-spacing: 0.5px; }
+
+        .sidebar-location { margin: 4px 0 0 0; font-size: clamp(11px, 0.9vw, 14px); font-weight: 600; color: #ffffff; opacity: 0.8; }
+
         
+
+        /* GÜNCELLENDİ: TEK SATIRA KİLİTLİ ALT BAŞLIK */
+
         .sidebar-subtitle { 
-            margin: clamp(8px, 1vh, 12px) 0 0 0; font-size: clamp(6.5px, 0.6vw, 9.5px); color: #2ecc71; text-transform: uppercase; 
-            letter-spacing: 0.5px; line-height: 1.4; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; 
+
+            margin: clamp(8px, 1vh, 12px) 0 0 0; 
+
+            font-size: clamp(6.5px, 0.6vw, 9.5px); /* Dar ekranlarda daha da küçülür */
+
+            color: #2ecc71; text-transform: uppercase; letter-spacing: 0.5px; 
+
+            line-height: 1.4; font-weight: 700; 
+
+            white-space: nowrap; /* Metnin alt satıra geçmesini kesin olarak engeller */
+
+            overflow: hidden; text-overflow: ellipsis; 
+
         }
+
         
+
         .sidebar-powered { text-align: right; margin-top: clamp(10px, 1.5vh, 15px); font-size: clamp(8px, 0.6vw, 10px); color: #777; font-style: italic; }
+
         .sidebar-content { padding: clamp(10px, 1vw, 15px); flex-grow: 1; overflow-y: auto; }
 
-        /* ARAMA KUTUSU VE FİLTRELER */
+
+
+        /* ARAMA KUTUSU VE İÇİNE GÖMÜLÜ ÇARPI İŞARETİ */
+
         .search-container { margin-top: clamp(10px, 1.5vh, 15px); position: relative; display: flex; gap: 8px; }
+
         .search-input-wrapper { position: relative; flex-grow: 1; display: flex; align-items: center; }
-        .search-input { width: 100%; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: clamp(8px, 1vh, 12px) clamp(25px, 2.5vw, 30px) clamp(8px, 1vh, 12px) clamp(10px, 1vw, 15px); color: white; font-size: clamp(11px, 0.9vw, 14px); outline: none; transition: all 0.3s ease; box-sizing: border-box; }
+
+        .search-input { width: 100%; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: clamp(8px, 1vh, 12px) clamp(25px, 2.5vw, 30px) clamp(8px, 1vh, 12px) clamp(10px, 1vw, 15px); color: white; font-size: clamp(11px, 0.9vw, 14px); outline: none; transition: border 0.3s; box-sizing: border-box; }
+
         .search-input:focus { border-color: #2ecc71; }
+
         .search-input::placeholder { color: #888; }
+
         .search-btn { background: #2ecc71; color: #111; border: none; border-radius: 8px; padding: 0 clamp(10px, 1vw, 15px); font-size: clamp(11px, 0.9vw, 14px); font-weight: bold; cursor: pointer; transition: background 0.2s; }
+
         .search-btn:hover { background: #27ae60; }
-        .search-results { margin-top: 8px; font-size: clamp(10px, 0.8vw, 12px); color: #ccc; transition: color 0.3s ease; }
+
+        .search-results { margin-top: 8px; font-size: clamp(10px, 0.8vw, 12px); color: #ccc; }
+
+        
+
         .clear-search-btn { display: none; position: absolute; right: 10px; color: #aaa; font-size: 20px; cursor: pointer; font-weight: bold; line-height: 1; transition: color 0.2s; }
+
         .clear-search-btn:hover { color: #e74c3c; }
 
-        /* YENİ: ÇEVRESEL FİLTRE BUTONLARI */
-        .filter-buttons { display: flex; gap: 8px; margin-top: 12px; }
-        .filter-btn { flex: 1; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.15); color: #ccc; border-radius: 6px; padding: 8px 4px; font-size: clamp(9px, 0.7vw, 11px); font-weight: bold; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 4px; }
-        .filter-btn:hover { background: rgba(255, 255, 255, 0.1); }
-        .filter-btn.active-heat { background: rgba(231, 76, 60, 0.2); border-color: #e74c3c; color: #ff7675; }
-        .filter-btn.active-pollen { background: rgba(241, 196, 15, 0.2); border-color: #f1c40f; color: #ffeaa7; }
+
 
         /* SAAT KUTUSU */
-        .top-clock-container { position: fixed; top: clamp(15px, 2vh, 25px); right: clamp(15px, 1.5vw, 25px); background-color: rgba(40, 40, 40, 0.70); backdrop-filter: blur(15px) saturate(180%); -webkit-backdrop-filter: blur(15px) saturate(180%); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: clamp(8px, 1vh, 12px) clamp(10px, 1vw, 16px); z-index: 1000; display: flex; flex-direction: column; align-items: center; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4); pointer-events: none; transition: all 0.3s ease; }
+
+        .top-clock-container { position: fixed; top: clamp(15px, 2vh, 25px); right: clamp(15px, 1.5vw, 25px); background-color: rgba(40, 40, 40, 0.70); backdrop-filter: blur(15px) saturate(180%); -webkit-backdrop-filter: blur(15px) saturate(180%); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: clamp(8px, 1vh, 12px) clamp(10px, 1vw, 16px); z-index: 1000; display: flex; flex-direction: column; align-items: center; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4); pointer-events: none; }
+
         .time-text { font-size: clamp(18px, 1.5vw, 24px); font-weight: 700; letter-spacing: 1px; color: #2ecc71; line-height: 1; font-family: 'Segoe UI', monospace; text-align: center; }
-        .date-text { font-size: clamp(7.5px, 0.6vw, 9.5px); font-weight: 600; color: #bbb; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.2px; text-align: center; transition: color 0.3s ease; }
+
+        .date-text { font-size: clamp(7.5px, 0.6vw, 9.5px); font-weight: 600; color: #bbb; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.2px; text-align: center; }
+
         
-        /* SAĞ KONTROL BUTONLARI (GPS VE MOD DEĞİŞTİRME) */
-        .right-controls { position: fixed; top: clamp(85px, 12vh, 110px); right: clamp(15px, 1.5vw, 25px); z-index: 1000; display: flex; flex-direction: column; gap: 10px; }
-        .control-btn { 
-            background-color: rgba(40, 40, 40, 0.8); border: 1px solid rgba(46, 204, 113, 0.5); backdrop-filter: blur(10px); 
-            color: #2ecc71; width: clamp(40px, 4vw, 50px); height: clamp(40px, 4vw, 50px); border-radius: 50%; 
-            cursor: pointer; display: flex; align-items: center; justify-content: center; 
+
+        /* GÜNCELLENDİ: EVRENSEL YUVARLAK GPS İKON BUTONU */
+
+        .recenter-btn { 
+
+            position: fixed; top: clamp(85px, 12vh, 110px); right: clamp(15px, 1.5vw, 25px); 
+
+            background-color: rgba(40, 40, 40, 0.8); border: 1px solid rgba(46, 204, 113, 0.5); 
+
+            backdrop-filter: blur(10px); color: #2ecc71; 
+
+            width: clamp(40px, 4vw, 50px); height: clamp(40px, 4vw, 50px); 
+
+            border-radius: 50%; cursor: pointer; z-index: 1000; 
+
+            display: flex; align-items: center; justify-content: center; 
+
             transition: all 0.2s; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4); 
+
         }
-        .control-btn:hover { background-color: rgba(46, 204, 113, 0.2); transform: scale(1.1); color: #fff; }
-        .control-btn:active { transform: scale(0.9); }
-        .control-btn svg { width: 50%; height: 50%; }
-        .theme-btn { border-color: rgba(255, 255, 255, 0.3); color: #f1c40f; font-size: 20px; }
-        .theme-btn:hover { background-color: rgba(255, 255, 255, 0.1); color: #fff; }
+
+        .recenter-btn:hover { background-color: rgba(46, 204, 113, 0.2); transform: scale(1.1); color: #fff; }
+
+        .recenter-btn:active { transform: scale(0.9); }
+
+        .recenter-btn svg { width: 50%; height: 50%; }
+
+
 
         /* EŞİT BOYUTLU KUTUCUKLAR */
+
         .excel-kutu-container { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(8px, 1vw, 12px); margin-top: clamp(10px, 1.5vh, 15px); }
+
         .veri-kutusu { 
+
             background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; 
-            padding: clamp(8px, 1vh, 12px); text-align: center; position: relative; cursor: pointer; transition: all 0.3s ease; 
-            display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: clamp(65px, 8vh, 85px); 
+
+            padding: clamp(8px, 1vh, 12px); text-align: center; position: relative; cursor: pointer; transition: transform 0.2s, background 0.2s; 
+
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+
+            min-height: clamp(65px, 8vh, 85px); 
+
         }
+
         .veri-kutusu:hover { background: rgba(255, 255, 255, 0.08); }
+
         .veri-kutusu:active { transform: scale(0.92); }
-        .veri-baslik { font-size: clamp(8px, 0.7vw, 11px); color: #999; text-transform: uppercase; margin-bottom: 6px; pointer-events: none; transition: color 0.3s ease; }
+
+        .veri-baslik { font-size: clamp(8px, 0.7vw, 11px); color: #999; text-transform: uppercase; margin-bottom: 6px; pointer-events: none; }
+
         .veri-deger-container { display: flex; align-items: center; justify-content: center; gap: 6px; pointer-events: none; }
-        .veri-deger { font-size: clamp(14px, 1.2vw, 18px); font-weight: 600; color: #ffffff; transition: color 0.3s ease; }
+
+        .veri-deger { font-size: clamp(14px, 1.2vw, 18px); font-weight: 600; color: #ffffff; }
+
         .trend-up { color: #2ecc71; font-size: clamp(12px, 1vw, 14px); }
+
         .trend-down { color: #e74c3c; font-size: clamp(12px, 1vw, 14px); }
+
         .trend-flat { color: #95a5a6; font-size: clamp(12px, 1vw, 14px); }
 
+
+
         .veri-kutusu.tam-genislik { grid-column: span 2; background: linear-gradient(135deg, rgba(46, 204, 113, 0.15) 0%, rgba(46, 204, 113, 0.02) 100%); border: 1px solid rgba(46, 204, 113, 0.3); }
+
         .veri-kutusu.tam-genislik .veri-baslik { color: #2ecc71; font-weight: bold; letter-spacing: 1px; }
+
         .veri-kutusu.tam-genislik .veri-deger { font-size: clamp(18px, 1.6vw, 24px); }
 
-        /* MODAL GRAFİK */
+
+
         #iosModal { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.4); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 9999; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s ease; }
+
         #iosModal.show { opacity: 1; }
-        #iosModalContent { width: 90%; max-width: clamp(400px, 50vw, 7
+
+        #iosModalContent { width: 90%; max-width: clamp(400px, 50vw, 750px); height: clamp(300px, 50vh, 500px); background: rgba(30, 30, 30, 0.85); border-radius: 24px; border: 1px solid rgba(255,255,255,0.15); padding: clamp(15px, 2vw, 25px); box-shadow: 0 25px 50px rgba(0,0,0,0.5); transform: scale(0); opacity: 0; transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.2), opacity 0.4s ease; position: relative; display: flex; flex-direction: column; }
+
+        #iosModal.show #iosModalContent { transform: scale(1); opacity: 1; }
+
+        .modal-baslik { color: white; margin: 0 0 clamp(10px, 1.5vh, 15px) 0; font-size: clamp(16px, 1.5vw, 20px); font-weight: 600; }
+
+        .close-btn { position: absolute; top: clamp(15px, 2vh, 20px); right: clamp(15px, 2vw, 25px); color: #aaa; font-size: clamp(24px, 2vw, 28px); cursor: pointer; font-weight: bold; transition: color 0.2s; line-height: 1; }
+
+        .close-btn:hover { color: #fff; }
+
+        .chart-container { flex-grow: 1; position: relative; width: 100%; }
+
+
+
+        .marker-cluster-small { background-color: rgba(46, 204, 113, 0.6); }
+
+        .marker-cluster-small div { background-color: rgba(46, 204, 113, 0.8); color: #fff; font-weight: bold; font-size: clamp(10px, 0.8vw, 12px); }
+
+        
+
+        .leaflet-popup-content-wrapper { background-color: rgba(25, 25, 25, 0.95) !important; backdrop-filter: blur(8px); color: #e0e0e0 !important; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); }
+
+        .agac-popup-baslik { font-size: clamp(12px, 1vw, 14px); font-weight: 600; color: #2ecc71; border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 6px; margin-bottom: 8px; }
+
+        .agac-popup-satir { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: clamp(10px, 0.8vw, 12px); }
+
+
+
+        /* DAİRESEL MERKEZİ RADAR TARAMASI VE OPTİK PARLAMA */
+
+        .kiosk-wrapper { position: relative; }
+
+        
+
+        .kiosk-core-dot {
+
+            background-color: #3498db; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.8);
+
+            position: absolute; top: 0; left: 0; z-index: 10;
+
+        }
+
+        
+
+        .kiosk-radar-container {
+
+            position: absolute; top: 11px; left: 11px; width: 0; height: 0; z-index: -1;
+
+        }
+
+        
+
+        .kiosk-radar-sweep {
+
+            position: absolute; top: -1500px; left: -1500px; width: 3000px; height: 3000px; border-radius: 50%;
+
+            background: conic-gradient(from 0deg, transparent 0%, transparent 75%, rgba(46, 204, 113, 0.02) 90%, rgba(46, 204, 113, 0.15) 100%);
+
+            animation: radar-spin 5s linear infinite; pointer-events: none;
+
+            -webkit-mask-image: radial-gradient(circle, rgba(0,0,0,1) 0%, rgba(0,0,0,0.5) 25%, rgba(0,0,0,0) 50%);
+
+            mask-image: radial-gradient(circle, rgba(0,0,0,1) 0%, rgba(0,0,0,0.5) 25%, rgba(0,0,0,0) 50%);
+
+            mix-blend-mode: color-dodge; 
+
+            opacity: 1; transition: opacity 2s ease-in; 
+
+        }
+
+        
+
+        @keyframes radar-spin { 
+
+            from { transform: rotate(0deg); } 
+
+            to { transform: rotate(360deg); } 
+
+        }
+
+
+
+        body.interacting .kiosk-radar-sweep {
+
+            opacity: 0 !important;
+
+            transition: opacity 0.3s ease-out; 
+
+        }
+
+
+
+    </style>
+
+</head>
+
+<body>
+
+
+
+    <div class="sidebar">
+
+        <div class="sidebar-header">
+
+            <div class="sidebar-title">PROJECT SENTREE</div>
+
+            <div class="sidebar-location">📍ALMAN BÜYÜKELÇİLİĞİ - TARABYA</div>
+
+            <p class="sidebar-subtitle">GIS TABANLI KENTSEL EKOSİSTEM HİZMETLERİ TAKİP SİSTEMİ</p>
+
+            
+
+            <div class="search-container">
+
+                <div class="search-input-wrapper">
+
+                    <input type="text" id="searchInput" class="search-input" placeholder="Lokanta, Tuvalet ara..." onkeypress="handleKeyPress(event)">
+
+                    <span id="clearSearchBtn" class="clear-search-btn" onclick="clearHighlight()">&times;</span>
+
+                </div>
+
+                <button class="search-btn" onclick="searchLocation()">Ara</button>
+
+            </div>
+
+            <div id="searchResults" class="search-results"></div>
+
+
+
+            <div class="sidebar-powered">Powered by CLIMERA Projects</div>
+
+        </div>
+
+        <div class="sidebar-content">
+
+            <div id="excel-verileri">Veriler yükleniyor...</div>
+
+        </div>
+
+    </div>
+
+
+
+    <div class="top-clock-container">
+
+        <div class="time-text" id="liveTime">--:--:--</div>
+
+        <div class="date-text" id="liveDate">SİSTEM BAĞLANTISI...</div>
+
+    </div>
+
+    
+
+    <!-- YENİ: YUVARLAK EVRENSEL GPS (CROSSHAIR) BUTONU -->
+
+    <button class="recenter-btn" onclick="merkezeDon()" title="Kiosk Konumuna Dön">
+
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+
+            <circle cx="12" cy="12" r="3"></circle>
+
+            <path d="M12 2v3"></path>
+
+            <path d="M12 19v3"></path>
+
+            <path d="M2 12h3"></path>
+
+            <path d="M19 12h3"></path>
+
+        </svg>
+
+    </button>
+
+
+
+    <div id="iosModal" onclick="if(event.target == this) closeChart()"><div id="iosModalContent"><span class="close-btn" onclick="closeChart()">&times;</span><h3 class="modal-baslik" id="modalBaslik">Grafik Yükleniyor...</h3><div class="chart-container"><canvas id="chartCanvas"></canvas></div></div></div>
+
+
+
+    <div id="map"></div>
+
+
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+
+
+    <script>
+
+        setInterval(() => {
+
+            const now = new Date();
+
+            const days = ["PAZAR", "PAZARTESİ", "SALI", "ÇARŞAMBA", "PERŞEMBE", "CUMA", "CUMARTESİ"];
+
+            const months = ["OCAK", "ŞUBAT", "MART", "NİSAN", "MAYIS", "HAZİRAN", "TEMMUZ", "AĞUSTOS", "EYLÜL", "EKİM", "KASIM", "ARALIK"];
+
+            document.getElementById('liveTime').innerText = now.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+            document.getElementById('liveDate').innerText = `${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()} | ${days[now.getDay()]}`;
+
+        }, 1000);
+
+
+
+        proj4.defs("EPSG:5254", "+proj=tmerc +lat_0=0 +lon_0=30 +k=1 +x_0=500000 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs");
+
+
+
+        var rawKioskCoords = [421029.4472, 4556083.3033]; 
+
+        var transformedKiosk = proj4("EPSG:5254", "EPSG:4326", rawKioskCoords);
+
+        var kioskLatLng = L.latLng(transformedKiosk[1], transformedKiosk[0]);
+
+        
+
+        var boundsOffset = 0.0035; 
+
+        var maxBounds = L.latLngBounds(
+
+            [kioskLatLng.lat - boundsOffset, kioskLatLng.lng - boundsOffset],
+
+            [kioskLatLng.lat + boundsOffset, kioskLatLng.lng + boundsOffset]
+
+        );
+
+        
+
+        var map = L.map('map', { 
+
+            renderer: L.svg({ padding: 3.0 }), 
+
+            zoomControl: false, 
+
+            attributionControl: false, 
+
+            minZoom: 16, 
+
+            maxZoom: 25, 
+
+            zoomSnap: 0.1, 
+
+            zoomDelta: 0.1,
+
+            maxBounds: maxBounds,         
+
+            maxBoundsViscosity: 0.85      
+
+        }).setView(kioskLatLng, 19);
+
+        
+
+        var kioskIcon = L.divIcon({ 
+
+            html: '<div class="kiosk-radar-container"><div class="kiosk-radar-sweep"></div></div><div class="kiosk-core-dot"></div>', 
+
+            className: 'kiosk-wrapper', 
+
+            iconSize: [22, 22], 
+
+            iconAnchor: [11, 11] 
+
+        });
+
+        
+
+        L.marker(kioskLatLng, {icon: kioskIcon}).addTo(map).bindPopup("<b style='color:#3498db'>Şu An Buradasınız</b>", { closeButton: false, closeOnClick: false, autoClose: false }).openPopup();
+
+
+
+        function merkezeDon() {
+
+            map.flyTo(kioskLatLng, 19, { duration: 1.5 });
+
+            handleInteraction(); 
+
+        }
+
+
+
+        var aktifVurgularKatmani = L.featureGroup().addTo(map);
+
+
+
+        var rawPoiListesi = [
+
+            { ad: "tuvalet", tip: "polygon", coords: [ [420944.7015, 4555949.0085], [420953.7871, 4555942.5953], [420939.1770, 4555922.0605], [420929.9926, 4555928.9925] ] },
+
+            { ad: "lokanta", tip: "point", x: 420962.2129, y: 4556130.5068 },
+
+            { ad: "tuvalet", tip: "point", x: 420952.2674, y: 4556029.0993 }
+
+        ];
+
+
+
+        var poiListesi = rawPoiListesi.map(poi => {
+
+            if (poi.tip === "polygon") {
+
+                var latLngs = poi.coords.map(c => { var trans = proj4("EPSG:5254", "EPSG:4326", [c[0], c[1]]); return [trans[1], trans[0]]; });
+
+                return { ad: poi.ad, tip: "polygon", latLngs: latLngs };
+
+            } else {
+
+                var trans = proj4("EPSG:5254", "EPSG:4326", [poi.x, poi.y]);
+
+                return { ad: poi.ad, tip: "point", lat: trans[1], lng: trans[0] };
+
+            }
+
+        });
+
+
+
+        function handleKeyPress(e) { if (e.key === 'Enter') searchLocation(); }
+
+
+
+        var glowLayers = [];
+
+        var animasyonZamanlayici = null;
+
+
+
+        function baslatJSAnimasyon() {
+
+            var pulseOpacity = 0.2;
+
+            var pulseDir = 0.04;
+
+            animasyonZamanlayici = setInterval(() => {
+
+                pulseOpacity += pulseDir;
+
+                if(pulseOpacity > 0.6) { pulseOpacity = 0.6; pulseDir = -0.04; }
+
+                if(pulseOpacity < 0.1) { pulseOpacity = 0.1; pulseDir = 0.04; }
+
+                
+
+                glowLayers.forEach(katman => {
+
+                    if(katman.setStyle) { katman.setStyle({ opacity: pulseOpacity, fillOpacity: pulseOpacity / 2 }); }
+
+                });
+
+            }, 40); 
+
+        }
+
+
+
+        function searchLocation() {
+
+            var searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+
+            var resultsDiv = document.getElementById('searchResults');
+
+            if (searchTerm.length < 2) { resultsDiv.innerHTML = "En az 2 harf girin."; return; }
+
+
+
+            var foundPOIs = poiListesi.filter(poi => poi.ad.includes(searchTerm));
+
+
+
+            if (foundPOIs.length > 0) {
+
+                resultsDiv.innerHTML = ""; 
+
+                aktifVurgularKatmani.clearLayers();
+
+                glowLayers = []; 
+
+                if(animasyonZamanlayici) clearInterval(animasyonZamanlayici);
+
+
+
+                foundPOIs.forEach(poi => {
+
+                    var coreLayer, glowLayer;
+
+                    
+
+                    if (poi.tip === "polygon") {
+
+                        glowLayer = L.polygon(poi.latLngs, { color: '#e74c3c', weight: 14, opacity: 0.3, fillOpacity: 0.1, lineJoin: 'round', interactive: false });
+
+                        coreLayer = L.polygon(poi.latLngs, { color: '#e74c3c', weight: 3, opacity: 1, fillOpacity: 0.7, interactive: false });
+
+                    } else {
+
+                        glowLayer = L.circleMarker([poi.lat, poi.lng], { radius: 18, color: 'transparent', fillColor: '#e74c3c', fillOpacity: 0.3, interactive: false });
+
+                        coreLayer = L.circleMarker([poi.lat, poi.lng], { radius: 8, color: '#fff', weight: 2, fillColor: '#e74c3c', fillOpacity: 1, interactive: false });
+
+                    }
+
+                    
+
+                    aktifVurgularKatmani.addLayer(glowLayer);
+
+                    aktifVurgularKatmani.addLayer(coreLayer);
+
+                    glowLayers.push(glowLayer); 
+
+                });
+
+
+
+                map.flyToBounds(aktifVurgularKatmani.getBounds(), { padding: [80, 80], maxZoom: 19.5, duration: 2.5 });
+
+                document.getElementById('clearSearchBtn').style.display = 'block';
+
+                
+
+                baslatJSAnimasyon(); 
+
+
+
+            } else {
+
+                resultsDiv.innerHTML = `<span style="color:#aaa">Konum bulunamadı.</span>`;
+
+            }
+
+        }
+
+
+
+        function clearHighlight() {
+
+            if(animasyonZamanlayici) clearInterval(animasyonZamanlayici);
+
+            glowLayers = [];
+
+            aktifVurgularKatmani.clearLayers();
+
+            document.getElementById('searchInput').value = "";
+
+            document.getElementById('searchResults').innerHTML = "";
+
+            document.getElementById('clearSearchBtn').style.display = 'none';
+
+            
+
+            var dist = map.distance(map.getCenter(), kioskLatLng);
+
+            if (map.getZoom() !== 19 || dist > 1.0) {
+
+                map.flyTo(kioskLatLng, 19, { duration: 2 });
+
+            }
+
+        }
+
+
+
+        var globalAnaKatman; 
+
+        var markers = L.markerClusterGroup({ showCoverageOnHover: false, maxClusterRadius: 35, disableClusteringAtZoom: 40, chunkedLoading: true });
+
+
+
+        fetch('veri.geojson').then(response => response.json()).then(data => {
+
+            globalAnaKatman = L.geoJSON(data, { coordsToLatLng: function (coords) { var transformed = proj4("EPSG:5254", "EPSG:4326", [coords[0], coords[1]]); return new L.LatLng(transformed[1], transformed[0]); }, style: { color: "darkgray", weight: 1, opacity: 0.6, fillColor: "gray", fillOpacity: 0.1 } }).addTo(map);
+
+        }).catch(err => console.error("GeoJSON yüklenemedi:", err));
+
+
+
+        var csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQgLRxnEhblACdZ6LTb4NINI8RwcLotC6j-h9AxTm1C0SffFWel0PnzOoUWE1Jh9tC1EUOWhGQE4gow/pub?gid=942754741&single=true&output=csv";
+
+        Papa.parse(csvUrl, {
+
+            download: true, header: false,
+
+            complete: function(results) {
+
+                var veriler = results.data;
+
+                if(veriler && veriler.length > 1) {
+
+                    var basliklar = veriler[0]; markers.clearLayers();
+
+                    for (var i = 1; i < veriler.length; i++) {
+
+                        var satir = veriler[i];
+
+                        var rawY = parseFloat(satir[7] ? satir[7].toString().replace(',', '.') : "NaN"); 
+
+                        var rawX = parseFloat(satir[8] ? satir[8].toString().replace(',', '.') : "NaN"); 
+
+                        var simgeBoyutu = parseFloat(satir[5] ? satir[5].toString().replace(',', '.') : "8");
+
+                        if (!isNaN(rawY) && !isNaN(rawX) && rawY > 1000 && rawX > 1000) {
+
+                            var convertedCoords = proj4("EPSG:5254", "EPSG:4326", [rawX, rawY]);
+
+                            var lng = convertedCoords[0], lat = convertedCoords[1]; 
+
+                            var popupHTML = "<div style='min-width:180px'><h3 class='agac-popup-baslik'>Biyometrik Analiz</h3>";
+
+                            [0, 1, 2, 6, 7, 8, 9].forEach(idx => { if(satir[idx]) popupHTML += `<div class="agac-popup-satir"><span>${basliklar[idx]}</span><span style="font-weight:600">${satir[idx]}</span></div>`; });
+
+                            popupHTML += "</div>";
+
+                            var marker = L.circleMarker([lat, lng], { radius: simgeBoyutu || 8, fillColor: "#2ecc71", color: "#2ecc71", weight: 2, fillOpacity: 0.8, className: 'pulsing-marker' }).bindPopup(popupHTML);
+
+                            markers.addLayer(marker);
+
+                        }
+
+                    }
+
+                    map.addLayer(markers);
+
+
+
+                    var panelSutunlari = [10, 11, 12, 13, 14, 15]; var eskiVeriSutunlari = [16, 17, 18, 19, 20, 21]; var birimler = { 10: "ton", 11: "ton", 12: "ton", 13: "TL", 14: "", 15: "adet" };
+
+                    var sonGuncelVeri = veriler.slice().reverse().find(row => row && row[10] && row[10].toString().trim() !== "");
+
+                    if (sonGuncelVeri) {
+
+                        var ibreliSayisi = parseInt(sonGuncelVeri[22]) || 0; var yaprakliSayisi = parseInt(sonGuncelVeri[23]) || 0;
+
+                        var html = '<div class="excel-kutu-container">';
+
+                        panelSutunlari.forEach((index, i) => {
+
+                            var mevcutSayi = parseFloat((sonGuncelVeri[index] || "0").toString().trim().replace(',', '.'));
+
+                            var eskiSayi = parseFloat((sonGuncelVeri[eskiVeriSutunlari[i]] || "NaN").toString().trim().replace(',', '.'));
+
+                            var baslikAdi = basliklar[index] || `-`;
+
+                            var birimMetni = birimler[index] ? `<span style='font-size:10px; color:#888; margin-left:3px;'>${birimler[index]}</span>` : "";
+
+                            var trendIcon = !isNaN(mevcutSayi) && !isNaN(eskiSayi) ? (mevcutSayi > eskiSayi ? "<span class='trend-up' style='margin-left:5px;'>▲</span>" : (mevcutSayi < eskiSayi ? "<span class='trend-down' style='margin-left:5px;'>▼</span>" : "<span class='trend-flat' style='margin-left:5px;'>▬</span>")) : "";
+
+                            html += `<div class="veri-kutusu" onclick="openChart(event, this)" data-baslik="${baslikAdi}" data-mevcut="${mevcutSayi}" data-eski="${eskiSayi}" data-birim="${birimler[index]}" data-ibreli="${ibreliSayisi}" data-yaprakli="${yaprakliSayisi}"><div class="veri-baslik">${baslikAdi}</div><div class="veri-deger-container"><span class="veri-deger">${sonGuncelVeri[index]||"0"}</span>${birimMetni}${trendIcon}</div></div>`;
+
+                        });
+
+                        
+
+                        html += `<div class="veri-kutusu" onclick="openChart(event, this)" data-baslik="Yıllık Enerji Tasarrufu" data-mevcut="14500" data-eski="13200" data-birim="kWh">
+
+                                    <div class="veri-baslik">Enerji Tasarrufu</div>
+
+                                    <div class="veri-deger-container"><span class="veri-deger">14.500</span><span style='font-size:10px; color:#888; margin-left:3px;'>kWh</span><span class='trend-up' style='margin-left:5px;'>▲</span></div>
+
+                                 </div>`;
+
+                        
+
+                        html += `<div class="veri-kutusu" onclick="openChart(event, this)" data-baslik="Önlenen Hava Kirliliği" data-mevcut="2.4" data-eski="1.9" data-birim="ton">
+
+                                    <div class="veri-baslik">Önlenen H. Kirliliği</div>
+
+                                    <div class="veri-deger-container"><span class="veri-deger">2.4</span><span style='font-size:10px; color:#888; margin-left:3px;'>ton</span><span class='trend-up' style='margin-left:5px;'>▲</span></div>
+
+                                 </div>`;
+
+
+
+                        html += `<div class="veri-kutusu tam-genislik" onclick="openChart(event, this)" data-baslik="Toplam Ekosistem Faydası" data-mevcut="145000" data-eski="110000" data-birim="TL">
+
+                                    <div class="veri-baslik">TOPLAM EKOSİSTEM FAYDASI</div>
+
+                                    <div class="veri-deger-container"><span class="veri-deger">145.000</span><span style='font-size:12px; color:#888; margin-left:3px;'>TL / Yıl</span><span class='trend-up' style='margin-left:5px; font-size:clamp(16px, 1.5vw, 20px);'>▲</span></div>
+
+                                 </div>`;
+
+
+
+                        html += '</div>';
+
+                        document.getElementById('excel-verileri').innerHTML = html;
+
+                    }
+
+                }
+
+            }
+
+        });
+
+
+
+        var currentChart = null;
+
+        function openChart(event, element) {
+
+            var baslik = element.getAttribute('data-baslik'); var mevcut = parseFloat(element.getAttribute('data-mevcut')); var eski = parseFloat(element.getAttribute('data-eski')); var birim = element.getAttribute('data-birim'); var ibreli = parseInt(element.getAttribute('data-ibreli')) || 0; var yaprakli = parseInt(element.getAttribute('data-yaprakli')) || 0;
+
+            if (birim === "undefined") birim = "";
+
+            var rect = element.getBoundingClientRect(); var originX = rect.left + (rect.width / 2); var originY = rect.top + (rect.height / 2);
+
+            var modal = document.getElementById('iosModal'); var modalContent = document.getElementById('iosModalContent');
+
+            document.getElementById('modalBaslik').innerText = baslik + " Karşılaştırması";
+
+            modal.style.display = 'flex'; modalContent.style.transformOrigin = `${originX}px ${originY}px`;
+
+            setTimeout(() => { modal.classList.add('show'); }, 10);
+
+            if(currentChart) currentChart.destroy();
+
+            var ctx = document.getElementById('chartCanvas').getContext('2d'); var isTreeCount = baslik.toLocaleLowerCase('tr-TR').includes("ağaç");
+
+            
+
+            if (isTreeCount && (ibreli > 0 || yaprakli > 0)) {
+
+                var chartLabels = isNaN(eski) ? ['Mevcut Dönem'] : ['Önceki Dönem', 'Mevcut Dönem']; var diger = mevcut - (ibreli + yaprakli); if (diger < 0) diger = 0;
+
+                var datasets = [];
+
+                if (!isNaN(eski)) { datasets.push({ label: 'Geçmiş Toplam', data: [eski, 0], backgroundColor: '#95a5a6', borderRadius: 4 }); datasets.push({ label: 'İbreli', data: [0, ibreli], backgroundColor: '#27ae60', borderRadius: 4 }); datasets.push({ label: 'Yapraklı', data: [0, yaprakli], backgroundColor: '#f39c12', borderRadius: 4 }); if(diger > 0) datasets.push({ label: 'Diğer', data: [0, diger], backgroundColor: '#8e44ad', borderRadius: 4 });
+
+                } else { datasets.push({ label: 'İbreli', data: [ibreli], backgroundColor: '#27ae60', borderRadius: 4 }); datasets.push({ label: 'Yapraklı', data: [yaprakli], backgroundColor: '#f39c12', borderRadius: 4 }); if(diger > 0) datasets.push({ label: 'Diğer', data: [diger], backgroundColor: '#8e44ad', borderRadius: 4 }); }
+
+                currentChart = new Chart(ctx, { type: 'bar', data: { labels: chartLabels, datasets: datasets }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, labels: {color: '#eee'} } }, scales: { x: { stacked: true, ticks: { color: '#eee', font: {size: 13, weight: 'bold'} }, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { color: '#bbb' }, grid: { color: 'rgba(255,255,255,0.05)' } } } } });
+
+            } else {
+
+                var chartLabels = isNaN(eski) ? ['Mevcut Dönem'] : ['Önceki Dönem', 'Mevcut Dönem']; var chartData = isNaN(eski) ? [mevcut] : [eski, mevcut]; 
+
+                var chartColors = isNaN(eski) ? ['#2ecc71'] : ['#95a5a6', '#2ecc71']; 
+
+                currentChart = new Chart(ctx, { type: 'bar', data: { labels: chartLabels, datasets: [{ label: birim ? `Birim: ${birim}` : 'Değer', data: chartData, backgroundColor: chartColors, borderRadius: 8, barPercentage: 0.5 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { color: '#bbb', font: {size: 11} }, grid: { color: 'rgba(255,255,255,0.05)' } }, x: { ticks: { color: '#eee', font: {size: 13, weight: 'bold'} }, grid: { display: false } } } } });
+
+            }
+
+        }
+
+        function closeChart() { document.getElementById('iosModal').classList.remove('show'); setTimeout(() => { document.getElementById('iosModal').style.display = 'none'; }, 400); }
+
+        
+
+        var idleTimer; 
+
+        var radarTimer; 
+
+
+
+        function resetInteraction() { 
+
+            var dist = map.distance(map.getCenter(), kioskLatLng);
+
+            if (aktifVurgularKatmani.getLayers().length > 0 || map.getZoom() !== 19 || dist > 1.0) {
+
+                clearHighlight(); 
+
+                map.closePopup(); 
+
+            }
+
+            closeChart();
+
+        }
+
+        
+
+        function handleInteraction() { 
+
+            document.body.classList.add('interacting');
+
+            
+
+            clearTimeout(idleTimer); 
+
+            idleTimer = setTimeout(resetInteraction, 15000); 
+
+            
+
+            clearTimeout(radarTimer);
+
+            radarTimer = setTimeout(() => {
+
+                document.body.classList.remove('interacting');
+
+            }, 4000); 
+
+        }
+
+
+
+        document.addEventListener('touchstart', handleInteraction, {passive: true}); 
+
+        document.addEventListener('mousedown', handleInteraction); 
+
+        document.addEventListener('keydown', handleInteraction); 
+
+        map.on('zoomstart', handleInteraction); 
+
+        map.on('dragstart', handleInteraction);
+
+        
+
+        handleInteraction();
+
+
+
+    </script>
+
+</body>
+
+</html>
